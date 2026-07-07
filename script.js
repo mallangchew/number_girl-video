@@ -9,6 +9,13 @@ const digitGlyphs = "0123456789".split("");
 const looseGlyphs = "00112233445566778899".split("");
 const maskPoints = [];
 const rainColumns = [];
+const pointer = {
+  x: 0,
+  y: 0,
+  active: false,
+  radius: 72,
+  strength: 18,
+};
 
 let width = 0;
 let height = 0;
@@ -92,6 +99,10 @@ function rebuildMask() {
           phase: random(0, Math.PI * 2),
           size: random(cellY * 0.74, cellY * 0.98),
           edge: random(-0.8, 0.8),
+          dx: 0,
+          dy: 0,
+          vx: 0,
+          vy: 0,
         });
       }
     }
@@ -110,6 +121,10 @@ function rebuildMaskFromEmbeddedData() {
       phase: random(0, Math.PI * 2),
       size: random(cellY * 0.74, cellY * 0.98),
       edge: random(-0.8, 0.8),
+      dx: 0,
+      dy: 0,
+      vx: 0,
+      vy: 0,
     });
   }
 }
@@ -133,6 +148,10 @@ function rebuildFallbackMask() {
           phase: random(0, Math.PI * 2),
           size: random(cellY * 0.74, cellY * 0.98),
           edge: random(-0.8, 0.8),
+          dx: 0,
+          dy: 0,
+          vx: 0,
+          vy: 0,
         });
       }
     }
@@ -187,6 +206,8 @@ function drawAsciiMask() {
   ctx.textBaseline = "middle";
 
   for (const point of maskPoints) {
+    updatePointScatter(point);
+
     const flicker = prefersReducedMotion.matches
       ? 0.72
       : 0.55 + (Math.sin(frame * 0.075 + point.phase) * 0.22) + (Math.random() > 0.975 ? 0.35 : 0);
@@ -201,10 +222,38 @@ function drawAsciiMask() {
     ctx.globalAlpha = alpha;
     ctx.fillStyle = point.brightness > 0.7 ? "#fbf7ee" : "#d4cec3";
     ctx.font = `${point.size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
-    ctx.fillText(point.glyph, point.x + edgeBreak, point.y + verticalNoise);
+    ctx.fillText(point.glyph, point.x + point.dx + edgeBreak, point.y + point.dy + verticalNoise);
   }
 
   ctx.restore();
+}
+
+function updatePointScatter(point) {
+  if (prefersReducedMotion.matches) {
+    return;
+  }
+
+  if (pointer.active) {
+    const pointX = point.x + point.dx;
+    const pointY = point.y + point.dy;
+    const deltaX = pointX - pointer.x;
+    const deltaY = pointY - pointer.y;
+    const distance = Math.hypot(deltaX, deltaY);
+
+    if (distance > 0 && distance < pointer.radius) {
+      const force = (1 - distance / pointer.radius) ** 2;
+      const angle = Math.atan2(deltaY, deltaX);
+      point.vx += Math.cos(angle) * force * pointer.strength;
+      point.vy += Math.sin(angle) * force * pointer.strength;
+    }
+  }
+
+  point.vx += -point.dx * 0.09;
+  point.vy += -point.dy * 0.09;
+  point.vx *= 0.78;
+  point.vy *= 0.78;
+  point.dx += point.vx;
+  point.dy += point.vy;
 }
 
 function drawSignalTears() {
@@ -273,3 +322,30 @@ if (sourceImage.complete) {
 }
 
 window.addEventListener("resize", resize);
+
+canvas.addEventListener("pointermove", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = event.clientX - rect.left;
+  pointer.y = event.clientY - rect.top;
+  pointer.active = true;
+});
+
+canvas.addEventListener("pointerenter", () => {
+  pointer.active = true;
+});
+
+canvas.addEventListener("pointerleave", () => {
+  pointer.active = false;
+});
+
+canvas.addEventListener("pointerdown", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = event.clientX - rect.left;
+  pointer.y = event.clientY - rect.top;
+  pointer.active = true;
+  pointer.strength = 30;
+});
+
+canvas.addEventListener("pointerup", () => {
+  pointer.strength = 18;
+});
