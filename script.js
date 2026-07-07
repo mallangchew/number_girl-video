@@ -13,8 +13,8 @@ const pointer = {
   x: 0,
   y: 0,
   active: false,
-  radius: 72,
-  strength: 18,
+  radius: 64,
+  strength: 12,
 };
 
 let width = 0;
@@ -23,6 +23,9 @@ let ratio = 1;
 let frame = 0;
 let cellX = 6;
 let cellY = 8;
+let lastRenderTime = 0;
+
+const maxFrameMs = 1000 / 24;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
@@ -43,7 +46,7 @@ function coverRect(imageWidth, imageHeight, targetWidth, targetHeight) {
 
 function resize() {
   const rect = canvas.getBoundingClientRect();
-  ratio = Math.min(window.devicePixelRatio || 1, 2);
+  ratio = Math.min(window.devicePixelRatio || 1, 1.35);
   width = rect.width;
   height = rect.height;
   canvas.width = Math.floor(width * ratio);
@@ -91,6 +94,10 @@ function rebuildMask() {
       const threshold = x < width * 0.5 ? 0.08 : 0.16;
 
       if (brightness * leftBias > threshold) {
+        if (!shouldKeepMaskPoint(x / width, y / height, brightness, maskPoints.length)) {
+          continue;
+        }
+
         maskPoints.push({
           x,
           y,
@@ -112,7 +119,13 @@ function rebuildMask() {
 function rebuildMaskFromEmbeddedData() {
   maskPoints.length = 0;
 
-  for (const [xNorm, yNorm, brightness] of window.ANGEL_MASK_POINTS) {
+  for (let index = 0; index < window.ANGEL_MASK_POINTS.length; index += 1) {
+    const [xNorm, yNorm, brightness] = window.ANGEL_MASK_POINTS[index];
+
+    if (!shouldKeepMaskPoint(xNorm, yNorm, brightness, index)) {
+      continue;
+    }
+
     maskPoints.push({
       x: xNorm * width,
       y: yNorm * height,
@@ -127,6 +140,20 @@ function rebuildMaskFromEmbeddedData() {
       vy: 0,
     });
   }
+}
+
+function shouldKeepMaskPoint(xNorm, yNorm, brightness, index) {
+  if (brightness >= 0.5) {
+    return true;
+  }
+
+  const hash = Math.abs(Math.sin((xNorm * 127.1 + yNorm * 311.7 + index * 0.013) * 43758.5453));
+
+  if (brightness >= 0.26) {
+    return hash % 1 < 0.86;
+  }
+
+  return hash % 1 < 0.45;
 }
 
 function rebuildFallbackMask() {
@@ -160,15 +187,16 @@ function rebuildFallbackMask() {
 
 function seedRainColumns() {
   rainColumns.length = 0;
-  const columns = Math.floor(width / cellX);
+  const stepX = cellX * 3.6;
+  const columns = Math.floor(width / stepX);
 
   for (let index = 0; index < columns; index += 1) {
     rainColumns.push({
-      x: index * cellX + random(-1, 1),
+      x: index * stepX + random(-1, 1),
       offset: random(-height, height),
-      speed: random(0.18, 0.72),
-      alpha: random(0.04, 0.17),
-      every: Math.random() > 0.7 ? 1 : 2,
+      speed: random(0.05, 0.2),
+      alpha: random(0.025, 0.08),
+      every: Math.random() > 0.45 ? 3 : 4,
     });
   }
 }
@@ -193,7 +221,7 @@ function drawBackgroundMatrix() {
 
       ctx.globalAlpha = alpha;
       ctx.fillStyle = "#d8d4cc";
-      const glyphIndex = (Math.floor((frame + y + column.x) / 9) % digitGlyphs.length + digitGlyphs.length) % digitGlyphs.length;
+      const glyphIndex = (Math.floor((frame + y * 0.35 + column.x * 0.35) / 28) % digitGlyphs.length + digitGlyphs.length) % digitGlyphs.length;
       ctx.fillText(digitGlyphs[glyphIndex], column.x, wrappedY);
     }
   }
@@ -204,6 +232,7 @@ function drawBackgroundMatrix() {
 function drawAsciiMask() {
   ctx.save();
   ctx.textBaseline = "middle";
+  ctx.font = `${Math.max(5, cellY * 0.86)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
 
   for (const point of maskPoints) {
     updatePointScatter(point);
@@ -212,16 +241,15 @@ function drawAsciiMask() {
       ? 0.72
       : 0.55 + (Math.sin(frame * 0.075 + point.phase) * 0.22) + (Math.random() > 0.975 ? 0.35 : 0);
     const edgeBreak = point.edge + (point.x > width * 0.4 ? Math.sin(frame * 0.04 + point.phase) * 0.55 : 0);
-    const verticalNoise = Math.random() > 0.992 ? random(-cellY * 0.55, cellY * 0.55) : 0;
+    const verticalNoise = (frame + point.phase * 10) % 97 < 1 ? Math.sin(point.phase) * cellY * 0.45 : 0;
     const alpha = Math.min(0.94, Math.max(0.08, point.brightness * 1.08 * flicker));
 
-    if (Math.random() < 0.055 && !prefersReducedMotion.matches) {
+    if (frame % 36 === 0 && point.phase % 1 < 0.08 && !prefersReducedMotion.matches) {
       point.glyph = digitGlyphs[Math.floor(Math.random() * digitGlyphs.length)];
     }
 
     ctx.globalAlpha = alpha;
     ctx.fillStyle = point.brightness > 0.7 ? "#fbf7ee" : "#d4cec3";
-    ctx.font = `${point.size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
     ctx.fillText(point.glyph, point.x + point.dx + edgeBreak, point.y + point.dy + verticalNoise);
   }
 
@@ -233,14 +261,25 @@ function updatePointScatter(point) {
     return;
   }
 
+  const sleeping = Math.abs(point.dx) < 0.02 && Math.abs(point.dy) < 0.02 && Math.abs(point.vx) < 0.02 && Math.abs(point.vy) < 0.02;
+  if (!pointer.active && sleeping) {
+    point.dx = 0;
+    point.dy = 0;
+    point.vx = 0;
+    point.vy = 0;
+    return;
+  }
+
   if (pointer.active) {
     const pointX = point.x + point.dx;
     const pointY = point.y + point.dy;
     const deltaX = pointX - pointer.x;
     const deltaY = pointY - pointer.y;
-    const distance = Math.hypot(deltaX, deltaY);
+    const distanceSquared = deltaX * deltaX + deltaY * deltaY;
+    const radiusSquared = pointer.radius * pointer.radius;
 
-    if (distance > 0 && distance < pointer.radius) {
+    if (distanceSquared > 0 && distanceSquared < radiusSquared) {
+      const distance = Math.sqrt(distanceSquared);
       const force = (1 - distance / pointer.radius) ** 2;
       const angle = Math.atan2(deltaY, deltaX);
       point.vx += Math.cos(angle) * force * pointer.strength;
@@ -248,10 +287,10 @@ function updatePointScatter(point) {
     }
   }
 
-  point.vx += -point.dx * 0.09;
-  point.vy += -point.dy * 0.09;
-  point.vx *= 0.78;
-  point.vy *= 0.78;
+  point.vx += -point.dx * 0.12;
+  point.vy += -point.dy * 0.12;
+  point.vx *= 0.7;
+  point.vy *= 0.7;
   point.dx += point.vx;
   point.dy += point.vy;
 }
@@ -261,7 +300,7 @@ function drawSignalTears() {
   ctx.font = `${Math.max(6, cellY * 0.95)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
   ctx.textBaseline = "middle";
 
-  for (let index = 0; index < 28; index += 1) {
+  for (let index = 0; index < 14; index += 1) {
     const x = random(width * 0.28, width * 0.6);
     const y = random(height * 0.08, height * 0.86);
     const length = random(2, 9);
@@ -293,7 +332,13 @@ function drawReferenceStyleCaptionMarks() {
   ctx.restore();
 }
 
-function render() {
+function render(timestamp = 0) {
+  if (timestamp - lastRenderTime < maxFrameMs) {
+    requestAnimationFrame(render);
+    return;
+  }
+
+  lastRenderTime = timestamp;
   frame += 1;
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = "#000";
@@ -302,7 +347,7 @@ function render() {
   drawBackgroundMatrix();
   drawAsciiMask();
 
-  if (!prefersReducedMotion.matches && frame % 5 === 0) {
+  if (!prefersReducedMotion.matches && frame % 24 === 0) {
     drawSignalTears();
   }
 
@@ -343,9 +388,9 @@ canvas.addEventListener("pointerdown", (event) => {
   pointer.x = event.clientX - rect.left;
   pointer.y = event.clientY - rect.top;
   pointer.active = true;
-  pointer.strength = 30;
+  pointer.strength = 18;
 });
 
 canvas.addEventListener("pointerup", () => {
-  pointer.strength = 18;
+  pointer.strength = 12;
 });
