@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Love Cult Archive Intro - Landscape</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="styles.css?v=20260709q">
   </head>
   <body>
     <main class="archive-intro archive-intro--wide" data-layout="wide-duo" aria-label="Animated mirrored archive intro">
@@ -17,12 +18,36 @@
       <canvas id="digits" aria-hidden="true"></canvas>
       <div class="archive-title" aria-label="is your love heaven or hell?">
         <p class="archive-title__main">is your love heaven or hell?</p>
-        <p class="archive-title__sub">enter</p>
       </div>
+      <button class="archive-title__sub archive-enter" type="button">enter</button>
+      <section class="prologue-scene" aria-label="Archive prologue" aria-hidden="true">
+        <img
+          class="prologue-scene__image"
+          src="assets/pirate-archive-prologue.png"
+          alt=""
+          aria-hidden="true"
+        >
+        <p class="prologue-copy prologue-copy--left">
+          <span>Once upon a time,</span>
+          <span>there was a girl</span>
+          <span>who wished for</span>
+          <span>everyone</span>
+          <span>to fall in love.</span>
+        </p>
+        <p class="prologue-copy prologue-copy--right">
+          <span>Once upon a time,</span>
+          <span>there was a girl</span>
+          <span>who wished for</span>
+          <span>everyone</span>
+          <span>to fall in love.</span>
+        </p>
+        <button class="prologue-back" type="button" aria-label="Back to intro">&lt;</button>
+      </section>
+      <div class="archive-blackout" aria-hidden="true"></div>
       <div class="scanlines" aria-hidden="true"></div>
       <div class="paper-noise" aria-hidden="true"></div>
     </main>
-    <script src="mask-data.js"></script>
-    <script src="script.js"></script>
+    <script src="mask-data.js?v=20260709q"></script>
+    <script src="script.js?v=20260709q"></script>
   </body>
 </html>

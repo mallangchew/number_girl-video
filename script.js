@@ -2,6 +2,9 @@ const canvas = document.querySelector("#digits");
 const ctx = canvas.getContext("2d", { alpha: true });
 const intro = document.querySelector(".archive-intro");
 const sourceImage = document.querySelector(".angel-art");
+const enterButton = document.querySelector(".archive-enter");
+const prologueScene = document.querySelector(".prologue-scene");
+const prologueBackButton = document.querySelector(".prologue-back");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const layout = intro?.dataset.layout || "portrait";
@@ -29,9 +32,41 @@ let cellY = 8;
 let lastRenderTime = 0;
 
 const maxFrameMs = 1000 / 24;
+const archiveTimers = [];
+let archiveState = "idle";
+let hasEnteredArchive = false;
+let ritualStartedFrame = 0;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
+}
+
+function smoothstep(edge0, edge1, value) {
+  const x = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
+
+  return x * x * (3 - 2 * x);
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getInnerScatterVector(point) {
+  const centerX = Math.max(width * 0.5, 1);
+  const centerY = height * 0.52;
+  const side = point.x < centerX ? -1 : 1;
+  const innerDirection = side === -1 ? 1 : -1;
+  const innerNorm = side === -1 ? point.x / centerX : (width - point.x) / centerX;
+  const innerBias = smoothstep(0.1, 0.48, innerNorm);
+  const verticalAim = (centerY - point.y) / Math.max(height, 1);
+  const laneNoise = Math.sin(point.phase * 2.3 + frame * 0.1) * 0.32;
+
+  return {
+    innerDirection,
+    innerBias,
+    verticalAim,
+    laneNoise,
+  };
 }
 
 function coverRect(imageWidth, imageHeight, targetWidth, targetHeight) {
@@ -316,7 +351,7 @@ function updatePointScatter(point) {
   }
 
   const sleeping = Math.abs(point.dx) < 0.02 && Math.abs(point.dy) < 0.02 && Math.abs(point.vx) < 0.02 && Math.abs(point.vy) < 0.02;
-  if (!pointer.active && sleeping) {
+  if (archiveState !== "ritual" && !pointer.active && sleeping) {
     point.dx = 0;
     point.dy = 0;
     point.vx = 0;
@@ -324,7 +359,19 @@ function updatePointScatter(point) {
     return;
   }
 
-  if (pointer.active) {
+  if (archiveState === "ritual") {
+    const scatter = getInnerScatterVector(point);
+
+    if (scatter.innerBias > 0.01) {
+      const ritualProgress = smoothstep(0, 56, frame - ritualStartedFrame);
+      const force = scatter.innerBias * (0.15 + ritualProgress * 0.46);
+
+      point.vx += scatter.innerDirection * force;
+      point.vy += (scatter.verticalAim * 0.32 + scatter.laneNoise * 0.18) * force;
+    }
+  }
+
+  if (pointer.active && archiveState !== "prologue") {
     const pointX = point.x + point.dx;
     const pointY = point.y + point.dy;
     const deltaX = pointX - pointer.x;
@@ -341,12 +388,107 @@ function updatePointScatter(point) {
     }
   }
 
-  point.vx += -point.dx * 0.12;
-  point.vy += -point.dy * 0.12;
-  point.vx *= 0.7;
-  point.vy *= 0.7;
+  const restoreStrength = archiveState === "ritual" ? 0 : 0.12;
+  const damping = archiveState === "ritual" ? 0.965 : 0.7;
+  const maxSpeed = archiveState === "ritual" ? Math.max(cellX, cellY) * 1.35 : Infinity;
+
+  point.vx += -point.dx * restoreStrength;
+  point.vy += -point.dy * restoreStrength;
+  point.vx *= damping;
+  point.vy *= damping;
+  point.vx = clamp(point.vx, -maxSpeed, maxSpeed);
+  point.vy = clamp(point.vy, -maxSpeed, maxSpeed);
   point.dx += point.vx;
   point.dy += point.vy;
+}
+
+function clearArchiveTimers() {
+  while (archiveTimers.length > 0) {
+    window.clearTimeout(archiveTimers.pop());
+  }
+}
+
+function scheduleArchiveStep(callback, delay) {
+  const timer = window.setTimeout(callback, prefersReducedMotion.matches ? 0 : delay);
+  archiveTimers.push(timer);
+}
+
+function triggerArchiveScatter() {
+  for (const point of maskPoints) {
+    const scatter = getInnerScatterVector(point);
+    const force = random(1.2, 3.6) * scatter.innerBias;
+
+    if (scatter.innerBias < 0.02) {
+      continue;
+    }
+
+    point.vx += scatter.innerDirection * force + random(-0.22, 0.22) * scatter.innerBias;
+    point.vy += (scatter.verticalAim * 0.34 + scatter.laneNoise * 0.24) * force;
+    point.dx += scatter.innerDirection * random(cellX * 0.2, cellX * 1.5) * scatter.innerBias;
+    point.dy += (scatter.verticalAim + scatter.laneNoise * 0.36) * random(cellY * 0.08, cellY * 0.7) * scatter.innerBias;
+  }
+}
+
+function resetArchiveScatter() {
+  for (const point of maskPoints) {
+    point.dx = 0;
+    point.dy = 0;
+    point.vx = 0;
+    point.vy = 0;
+  }
+}
+
+function enterArchive() {
+  if (!enterButton || !prologueScene || archiveState !== "idle" || hasEnteredArchive) {
+    return;
+  }
+
+  archiveState = "ritual";
+  hasEnteredArchive = true;
+  ritualStartedFrame = frame;
+  pointer.active = false;
+  intro.classList.remove("is-prologue", "is-dissolving", "is-entering", "is-resetting");
+  intro.classList.add("is-ritual");
+  enterButton.disabled = true;
+  triggerArchiveScatter();
+
+  scheduleArchiveStep(() => {
+    intro.classList.add("is-dissolving");
+  }, 1360);
+
+  scheduleArchiveStep(() => {
+    intro.classList.add("is-prologue");
+    prologueScene.setAttribute("aria-hidden", "false");
+  }, 2180);
+
+  scheduleArchiveStep(() => {
+    archiveState = "prologue";
+    intro.classList.remove("is-ritual");
+  }, 3300);
+}
+
+function returnToIntro() {
+  if (!prologueScene) {
+    return;
+  }
+
+  clearArchiveTimers();
+  archiveState = "idle";
+  hasEnteredArchive = false;
+  ritualStartedFrame = 0;
+  pointer.active = false;
+  intro.classList.remove("is-prologue", "is-ritual", "is-dissolving", "is-entering");
+  intro.classList.add("is-resetting");
+  prologueScene.setAttribute("aria-hidden", "true");
+  resetArchiveScatter();
+
+  if (enterButton) {
+    enterButton.disabled = false;
+  }
+
+  scheduleArchiveStep(() => {
+    intro.classList.remove("is-resetting");
+  }, 80);
 }
 
 function drawSignalTears() {
@@ -398,12 +540,14 @@ function drawCaptionMarkRange(startX, endX) {
 }
 
 function render(timestamp = 0) {
-  if (timestamp - lastRenderTime < maxFrameMs) {
+  const elapsed = timestamp - lastRenderTime;
+
+  if (elapsed < maxFrameMs) {
     requestAnimationFrame(render);
     return;
   }
 
-  lastRenderTime = timestamp;
+  lastRenderTime = timestamp - (elapsed % maxFrameMs);
   frame += 1;
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = "#000";
@@ -459,3 +603,11 @@ canvas.addEventListener("pointerdown", (event) => {
 canvas.addEventListener("pointerup", () => {
   pointer.strength = 12;
 });
+
+if (enterButton && prologueScene) {
+  enterButton.addEventListener("click", enterArchive);
+}
+
+if (prologueBackButton) {
+  prologueBackButton.addEventListener("click", returnToIntro);
+}
