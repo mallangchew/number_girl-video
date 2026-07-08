@@ -4,7 +4,10 @@ const intro = document.querySelector(".archive-intro");
 const sourceImage = document.querySelector(".angel-art");
 const enterButton = document.querySelector(".archive-enter");
 const prologueScene = document.querySelector(".prologue-scene");
-const prologueBackButton = document.querySelector(".prologue-back");
+const archiveBackButton = document.querySelector(".archive-back");
+const prologueEntryButtons = document.querySelectorAll(".prologue-copy");
+const doctrineScene = document.querySelector(".doctrine-scene");
+const doctrineCloserButtons = document.querySelectorAll(".doctrine-closer");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const layout = intro?.dataset.layout || "portrait";
@@ -371,7 +374,7 @@ function updatePointScatter(point) {
     }
   }
 
-  if (pointer.active && archiveState !== "prologue") {
+  if (pointer.active && (archiveState === "idle" || archiveState === "ritual")) {
     const pointX = point.x + point.dx;
     const pointY = point.y + point.dy;
     const deltaX = pointX - pointer.x;
@@ -438,6 +441,18 @@ function resetArchiveScatter() {
   }
 }
 
+function setPrologueEntryDisabled(disabled) {
+  for (const button of prologueEntryButtons) {
+    button.disabled = disabled;
+  }
+}
+
+function setDoctrineCloserDisabled(disabled) {
+  for (const button of doctrineCloserButtons) {
+    button.disabled = disabled;
+  }
+}
+
 function enterArchive() {
   if (!enterButton || !prologueScene || archiveState !== "idle" || hasEnteredArchive) {
     return;
@@ -459,12 +474,67 @@ function enterArchive() {
   scheduleArchiveStep(() => {
     intro.classList.add("is-prologue");
     prologueScene.setAttribute("aria-hidden", "false");
+    setPrologueEntryDisabled(false);
+
+    if (archiveBackButton) {
+      archiveBackButton.disabled = false;
+    }
   }, 2180);
 
   scheduleArchiveStep(() => {
     archiveState = "prologue";
-    intro.classList.remove("is-ritual");
+    intro.classList.remove("is-ritual", "is-dissolving");
   }, 3300);
+}
+
+function enterDoctrine() {
+  if (!prologueScene || !doctrineScene || archiveState !== "prologue") {
+    return;
+  }
+
+  archiveState = "doctrine-entering";
+  intro.classList.remove("is-resetting", "is-doctrine", "is-doctrine-hover", "is-doctrine-accepted");
+  intro.classList.add("is-prologue-leaving", "is-doctrine-entering");
+  doctrineScene.setAttribute("aria-hidden", "false");
+  setPrologueEntryDisabled(true);
+
+  scheduleArchiveStep(() => {
+    prologueScene.setAttribute("aria-hidden", "true");
+    intro.classList.remove("is-prologue");
+  }, 1600);
+
+  scheduleArchiveStep(() => {
+    archiveState = "doctrine";
+    intro.classList.remove("is-prologue-leaving", "is-doctrine-entering", "is-dissolving");
+    intro.classList.add("is-doctrine");
+    setDoctrineCloserDisabled(false);
+  }, 2600);
+}
+
+function returnToPrologue() {
+  if (!prologueScene || !doctrineScene) {
+    return;
+  }
+
+  clearArchiveTimers();
+  archiveState = "prologue";
+  pointer.active = false;
+  intro.classList.remove(
+    "is-prologue-leaving",
+    "is-doctrine",
+    "is-doctrine-entering",
+    "is-doctrine-hover",
+    "is-doctrine-accepted",
+  );
+  intro.classList.add("is-prologue");
+  prologueScene.setAttribute("aria-hidden", "false");
+  doctrineScene.setAttribute("aria-hidden", "true");
+  setPrologueEntryDisabled(false);
+  setDoctrineCloserDisabled(true);
+
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
 }
 
 function returnToIntro() {
@@ -477,18 +547,85 @@ function returnToIntro() {
   hasEnteredArchive = false;
   ritualStartedFrame = 0;
   pointer.active = false;
-  intro.classList.remove("is-prologue", "is-ritual", "is-dissolving", "is-entering");
+  intro.classList.remove(
+    "is-prologue",
+    "is-prologue-leaving",
+    "is-ritual",
+    "is-dissolving",
+    "is-entering",
+    "is-doctrine",
+    "is-doctrine-entering",
+    "is-doctrine-hover",
+    "is-doctrine-accepted",
+  );
   intro.classList.add("is-resetting");
   prologueScene.setAttribute("aria-hidden", "true");
+
+  if (doctrineScene) {
+    doctrineScene.setAttribute("aria-hidden", "true");
+  }
+
   resetArchiveScatter();
+  setPrologueEntryDisabled(false);
+  setDoctrineCloserDisabled(false);
 
   if (enterButton) {
     enterButton.disabled = false;
   }
 
+  if (archiveBackButton) {
+    archiveBackButton.disabled = true;
+  }
+
   scheduleArchiveStep(() => {
     intro.classList.remove("is-resetting");
   }, 80);
+}
+
+function restoreDoctrineFromAccepted() {
+  if (archiveState !== "doctrine-accepted") {
+    return;
+  }
+
+  archiveState = "doctrine";
+  intro.classList.remove("is-doctrine-accepted");
+  intro.classList.add("is-doctrine");
+  setDoctrineCloserDisabled(false);
+}
+
+function goBack() {
+  if (archiveState === "prologue") {
+    returnToIntro();
+    return;
+  }
+
+  if (archiveState === "doctrine" || archiveState === "doctrine-entering") {
+    returnToPrologue();
+    return;
+  }
+
+  if (archiveState === "doctrine-accepted") {
+    restoreDoctrineFromAccepted();
+  }
+}
+
+function setDoctrineHover(isHovering) {
+  if (archiveState !== "doctrine") {
+    return;
+  }
+
+  intro.classList.toggle("is-doctrine-hover", isHovering);
+}
+
+function acceptDoctrine() {
+  if (archiveState !== "doctrine") {
+    return;
+  }
+
+  archiveState = "doctrine-accepted";
+  intro.classList.remove("is-doctrine-hover");
+  intro.classList.add("is-doctrine-accepted");
+  setDoctrineCloserDisabled(true);
 }
 
 function drawSignalTears() {
@@ -608,6 +745,18 @@ if (enterButton && prologueScene) {
   enterButton.addEventListener("click", enterArchive);
 }
 
-if (prologueBackButton) {
-  prologueBackButton.addEventListener("click", returnToIntro);
+if (archiveBackButton) {
+  archiveBackButton.addEventListener("click", goBack);
+}
+
+for (const button of prologueEntryButtons) {
+  button.addEventListener("click", enterDoctrine);
+}
+
+for (const button of doctrineCloserButtons) {
+  button.addEventListener("mouseenter", () => setDoctrineHover(true));
+  button.addEventListener("mouseleave", () => setDoctrineHover(false));
+  button.addEventListener("focus", () => setDoctrineHover(true));
+  button.addEventListener("blur", () => setDoctrineHover(false));
+  button.addEventListener("click", acceptDoctrine);
 }
