@@ -1,8 +1,11 @@
 const canvas = document.querySelector("#digits");
 const ctx = canvas.getContext("2d", { alpha: true });
+const intro = document.querySelector(".archive-intro");
 const sourceImage = document.querySelector(".angel-art");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+const layout = intro?.dataset.layout || "portrait";
+const isWideDuo = layout === "wide-duo";
 const maskCanvas = document.createElement("canvas");
 const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
 const digitGlyphs = "0123456789".split("");
@@ -119,6 +122,11 @@ function rebuildMask() {
 function rebuildMaskFromEmbeddedData() {
   maskPoints.length = 0;
 
+  if (isWideDuo) {
+    rebuildWideDuoMaskFromEmbeddedData();
+    return;
+  }
+
   for (let index = 0; index < window.ANGEL_MASK_POINTS.length; index += 1) {
     const [xNorm, yNorm, brightness] = window.ANGEL_MASK_POINTS[index];
 
@@ -126,20 +134,50 @@ function rebuildMaskFromEmbeddedData() {
       continue;
     }
 
-    maskPoints.push({
-      x: xNorm * width,
-      y: yNorm * height,
-      brightness,
-      glyph: digitGlyphs[Math.floor(Math.random() * digitGlyphs.length)],
-      phase: random(0, Math.PI * 2),
-      size: random(cellY * 0.74, cellY * 0.98),
-      edge: random(-0.8, 0.8),
-      dx: 0,
-      dy: 0,
-      vx: 0,
-      vy: 0,
-    });
+    addMaskPoint(xNorm * width, yNorm * height, brightness);
   }
+}
+
+function rebuildWideDuoMaskFromEmbeddedData() {
+  const edgeInset = 0.04;
+  const topLift = -0.018;
+  const verticalScale = 1.06;
+
+  for (let index = 0; index < window.ANGEL_MASK_POINTS.length; index += 1) {
+    const [xNorm, yNorm, brightness] = window.ANGEL_MASK_POINTS[index];
+
+    if (!shouldKeepWideDuoPoint(xNorm, yNorm, brightness, index)) {
+      continue;
+    }
+
+    const y = (topLift + yNorm * verticalScale) * height;
+
+    if (y < -cellY || y > height + cellY) {
+      continue;
+    }
+
+    const shoulderDepth = Math.min(1, Math.max(0, (yNorm - 0.52) / 0.42));
+    const halfWidth = 0.34 - shoulderDepth * 0.08;
+
+    addMaskPoint((edgeInset + xNorm * halfWidth) * width, y, brightness);
+    addMaskPoint((1 - edgeInset - xNorm * halfWidth) * width, y, brightness);
+  }
+}
+
+function addMaskPoint(x, y, brightness) {
+  maskPoints.push({
+    x,
+    y,
+    brightness,
+    glyph: digitGlyphs[Math.floor(Math.random() * digitGlyphs.length)],
+    phase: random(0, Math.PI * 2),
+    size: random(cellY * 0.74, cellY * 0.98),
+    edge: random(-0.8, 0.8),
+    dx: 0,
+    dy: 0,
+    vx: 0,
+    vy: 0,
+  });
 }
 
 function shouldKeepMaskPoint(xNorm, yNorm, brightness, index) {
@@ -154,6 +192,18 @@ function shouldKeepMaskPoint(xNorm, yNorm, brightness, index) {
   }
 
   return hash % 1 < 0.45;
+}
+
+function shouldKeepWideDuoPoint(xNorm, yNorm, brightness, index) {
+  if (!shouldKeepMaskPoint(xNorm, yNorm, brightness, index)) {
+    return false;
+  }
+
+  if (xNorm > 0.58 || brightness < 0.18) {
+    return false;
+  }
+
+  return !(xNorm > 0.44 && brightness < 0.3);
 }
 
 function rebuildFallbackMask() {
@@ -202,6 +252,10 @@ function seedRainColumns() {
 }
 
 function drawBackgroundMatrix() {
+  if (isWideDuo) {
+    return;
+  }
+
   ctx.save();
   ctx.font = `${Math.max(5, cellY * 0.78)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
   ctx.textBaseline = "middle";
@@ -323,13 +377,24 @@ function drawReferenceStyleCaptionMarks() {
   ctx.font = `${Math.max(5, cellY * 0.68)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
   ctx.textBaseline = "middle";
 
-  for (let x = width * 0.06; x < width * 0.38; x += cellX * 1.45) {
+  if (isWideDuo) {
+    drawCaptionMarkRange(width * 0.06, width * 0.3);
+    drawCaptionMarkRange(width * 0.7, width * 0.94);
+    ctx.restore();
+    return;
+  }
+
+  drawCaptionMarkRange(width * 0.06, width * 0.38);
+
+  ctx.restore();
+}
+
+function drawCaptionMarkRange(startX, endX) {
+  for (let x = startX; x < endX; x += cellX * 1.45) {
     if (Math.random() > 0.32) {
       ctx.fillText(digitGlyphs[Math.floor(Math.random() * digitGlyphs.length)], x, height * 0.93 + random(-2, 2));
     }
   }
-
-  ctx.restore();
 }
 
 function render(timestamp = 0) {
@@ -347,7 +412,7 @@ function render(timestamp = 0) {
   drawBackgroundMatrix();
   drawAsciiMask();
 
-  if (!prefersReducedMotion.matches && frame % 24 === 0) {
+  if (!isWideDuo && !prefersReducedMotion.matches && frame % 24 === 0) {
     drawSignalTears();
   }
 
