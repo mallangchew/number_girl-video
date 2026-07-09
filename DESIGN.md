@@ -73,6 +73,12 @@ All spacing uses a 4px base.
 - **States**: idle, ritual, prologue, doctrine, broadcast.
 - **Motion**: scene changes use opacity, transform, and filter only.
 
+### Prologue Choice
+- **Structure**: two mirrored `button.prologue-copy` text blocks over the prologue image.
+- **States**: entering, active, hover, focus-visible, active/pressed, disabled.
+- **Motion**: hover/focus uses a small upward scale bump and brighter pink-white glow so the large story text reads as clickable; active/pressed settles back down.
+- **Accessibility**: both text blocks are real buttons and stay disabled until the prologue scene is active.
+
 ### Doctrine Navigation
 - **Structure**: four uppercase category spans.
 - **States**: default, active.
@@ -85,15 +91,23 @@ All spacing uses a 4px base.
 - **Accessibility**: decorative image and static are `aria-hidden`; the scene has a descriptive label.
 - **Motion**: the camera layer starts inside the CRT screen and zooms out to reveal the full TV; the ad tunes in during the pullback while the masked static dims but stays on top as VHS interference.
 
+### Broadcast Call Prompt
+- **Structure**: a masked call layer inside the broadcast camera, with one transparent hit target over the ad's lower phone-number banner, plus a separate scene-level `- call her` subtitle set in `Arial Narrow` below the CRT screen.
+- **States**: dormant during pullback, subtitle-active after the broadcast settles, called after the user clicks the lower call area.
+- **Motion**: the subtitle appears like a late TV caption with a slight VHS flicker only; no scale pop, bounce, or glossy web-button behavior.
+- **Layout**: the lower call hit area covers the TV ad's phone-number band without hiding the ad art. The subtitle stays centered on the lower black TV body, below the CRT glass and above the lower edge of the stage, matching a film subtitle placed just under the picture. It shares the same destination. The static layer remains above the television image only as the final CRT coating.
+- **Accessibility**: both the lower call area and subtitle are real buttons with the same `aria-label`; the TV image, ad image, and static remain decorative.
+
 ## 6. Motion & Interaction
 
 ### Timing
 
 | Type | Duration | Easing | Usage |
 |------|----------|--------|-------|
-| Micro | 180-240ms | ease | Hover glow |
+| Micro | 180-240ms | ease / cubic-bezier(0.2, 0.8, 0.2, 1) | Hover glow, prologue bump |
 | Standard | 800-1400ms | ease-in-out | Scene fade |
 | Emphasis | 4200ms + delayed 1300ms | cubic-bezier(0.76, 0, 0.24, 1) + linear | CRT pullback, full-TV static hold, then ad tune-in |
+| Call prompt | 680ms after 920ms delay | steps(2, end) | Delayed `- call her` subtitle after the ad appears |
 
 ### Rules
 

@@ -9,6 +9,7 @@ const prologueEntryButtons = document.querySelectorAll(".prologue-copy");
 const doctrineScene = document.querySelector(".doctrine-scene");
 const doctrineCloserButtons = document.querySelectorAll(".doctrine-closer");
 const broadcastScene = document.querySelector(".broadcast-scene");
+const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const layout = intro?.dataset.layout || "portrait";
@@ -501,6 +502,7 @@ function enterDoctrine() {
     "is-doctrine-accepted",
     "is-broadcast-entering",
     "is-broadcast",
+    "is-broadcast-called",
   );
   intro.classList.add("is-prologue-leaving", "is-doctrine-entering");
   doctrineScene.setAttribute("aria-hidden", "false");
@@ -538,6 +540,7 @@ function returnToPrologue() {
     "is-doctrine-accepted",
     "is-broadcast-entering",
     "is-broadcast",
+    "is-broadcast-called",
   );
   intro.classList.add("is-prologue");
   prologueScene.setAttribute("aria-hidden", "false");
@@ -575,6 +578,7 @@ function returnToIntro() {
     "is-doctrine-accepted",
     "is-broadcast-entering",
     "is-broadcast",
+    "is-broadcast-called",
   );
   intro.classList.add("is-resetting");
   prologueScene.setAttribute("aria-hidden", "true");
@@ -626,6 +630,7 @@ function returnToDoctrineFromBroadcast() {
   intro.classList.remove(
     "is-broadcast-entering",
     "is-broadcast",
+    "is-broadcast-called",
     "is-doctrine-hover",
     "is-doctrine-accepted",
   );
@@ -658,6 +663,10 @@ function goBack() {
   if (archiveState === "broadcast-entering" || archiveState === "broadcast") {
     returnToDoctrineFromBroadcast();
   }
+
+  if (archiveState === "broadcast-called") {
+    returnToDoctrineFromBroadcast();
+  }
 }
 
 function setDoctrineHover(isHovering) {
@@ -687,7 +696,7 @@ function enterBroadcast() {
   clearArchiveTimers();
   archiveState = "broadcast-entering";
   pointer.active = false;
-  intro.classList.remove("is-doctrine-hover", "is-doctrine-accepted", "is-broadcast");
+  intro.classList.remove("is-doctrine-hover", "is-doctrine-accepted", "is-broadcast", "is-broadcast-called");
   intro.classList.add("is-broadcast-entering");
   broadcastScene.setAttribute("aria-hidden", "false");
   setDoctrineCloserDisabled(true);
@@ -701,6 +710,15 @@ function enterBroadcast() {
       doctrineScene.setAttribute("aria-hidden", "true");
     }
   }, 7100);
+}
+
+function callHerFromBroadcast() {
+  if (archiveState !== "broadcast") {
+    return;
+  }
+
+  archiveState = "broadcast-called";
+  intro.classList.add("is-broadcast-called");
 }
 
 function drawSignalTears() {
@@ -841,4 +859,8 @@ for (const button of doctrineCloserButtons) {
 
     acceptDoctrine();
   });
+}
+
+for (const button of broadcastCallButtons) {
+  button.addEventListener("click", callHerFromBroadcast);
 }
