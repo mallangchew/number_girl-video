@@ -2,16 +2,18 @@ const canvas = document.querySelector("#digits");
 const ctx = canvas.getContext("2d", { alpha: true });
 const intro = document.querySelector(".archive-intro");
 const sourceImage = document.querySelector(".angel-art");
-const enterButton = document.querySelector(".archive-enter");
-const prologueScene = document.querySelector(".prologue-scene");
-const archiveBackButton = document.querySelector(".archive-back");
-const prologueEntryButtons = document.querySelectorAll(".prologue-copy");
-const doctrineScene = document.querySelector(".doctrine-scene");
-const doctrineCloserButtons = document.querySelectorAll(".doctrine-closer");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const rootStyles = window.getComputedStyle(document.documentElement);
 
 const layout = intro?.dataset.layout || "portrait";
 const isWideDuo = layout === "wide-duo";
+const colors = {
+  black: rgbToken("--color-black", "0 0 0"),
+  paper: rgbToken("--color-paper", "244 241 236"),
+  paperBright: rgbToken("--color-white", "255 255 255"),
+  inkMuted: rgbToken("--color-ink-muted", "216 212 204"),
+  ash: rgbToken("--color-ash", "201 197 189"),
+};
 const maskCanvas = document.createElement("canvas");
 const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
 const digitGlyphs = "0123456789".split("");
@@ -35,41 +37,13 @@ let cellY = 8;
 let lastRenderTime = 0;
 
 const maxFrameMs = 1000 / 24;
-const archiveTimers = [];
-let archiveState = "idle";
-let hasEnteredArchive = false;
-let ritualStartedFrame = 0;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
 }
 
-function smoothstep(edge0, edge1, value) {
-  const x = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
-
-  return x * x * (3 - 2 * x);
-}
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function getInnerScatterVector(point) {
-  const centerX = Math.max(width * 0.5, 1);
-  const centerY = height * 0.52;
-  const side = point.x < centerX ? -1 : 1;
-  const innerDirection = side === -1 ? 1 : -1;
-  const innerNorm = side === -1 ? point.x / centerX : (width - point.x) / centerX;
-  const innerBias = smoothstep(0.1, 0.48, innerNorm);
-  const verticalAim = (centerY - point.y) / Math.max(height, 1);
-  const laneNoise = Math.sin(point.phase * 2.3 + frame * 0.1) * 0.32;
-
-  return {
-    innerDirection,
-    innerBias,
-    verticalAim,
-    laneNoise,
-  };
+function rgbToken(name, fallback) {
+  return `rgb(${rootStyles.getPropertyValue(name).trim() || fallback})`;
 }
 
 function coverRect(imageWidth, imageHeight, targetWidth, targetHeight) {
@@ -106,7 +80,7 @@ function rebuildMask() {
     return;
   }
 
-  if (!sourceImage.complete || !sourceImage.naturalWidth) {
+  if (!sourceImage?.complete || !sourceImage.naturalWidth) {
     return;
   }
 
@@ -312,7 +286,7 @@ function drawBackgroundMatrix() {
       const alpha = column.alpha * rightFade * gapFade * (0.45 + pulse * 0.55);
 
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = "#d8d4cc";
+      ctx.fillStyle = colors.inkMuted;
       const glyphIndex = (Math.floor((frame + y * 0.35 + column.x * 0.35) / 28) % digitGlyphs.length + digitGlyphs.length) % digitGlyphs.length;
       ctx.fillText(digitGlyphs[glyphIndex], column.x, wrappedY);
     }
@@ -341,7 +315,7 @@ function drawAsciiMask() {
     }
 
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = point.brightness > 0.7 ? "#fbf7ee" : "#d4cec3";
+    ctx.fillStyle = point.brightness > 0.7 ? colors.paperBright : colors.inkMuted;
     ctx.fillText(point.glyph, point.x + point.dx + edgeBreak, point.y + point.dy + verticalNoise);
   }
 
@@ -354,7 +328,7 @@ function updatePointScatter(point) {
   }
 
   const sleeping = Math.abs(point.dx) < 0.02 && Math.abs(point.dy) < 0.02 && Math.abs(point.vx) < 0.02 && Math.abs(point.vy) < 0.02;
-  if (archiveState !== "ritual" && !pointer.active && sleeping) {
+  if (!pointer.active && sleeping) {
     point.dx = 0;
     point.dy = 0;
     point.vx = 0;
@@ -362,19 +336,7 @@ function updatePointScatter(point) {
     return;
   }
 
-  if (archiveState === "ritual") {
-    const scatter = getInnerScatterVector(point);
-
-    if (scatter.innerBias > 0.01) {
-      const ritualProgress = smoothstep(0, 56, frame - ritualStartedFrame);
-      const force = scatter.innerBias * (0.15 + ritualProgress * 0.46);
-
-      point.vx += scatter.innerDirection * force;
-      point.vy += (scatter.verticalAim * 0.32 + scatter.laneNoise * 0.18) * force;
-    }
-  }
-
-  if (pointer.active && (archiveState === "idle" || archiveState === "ritual")) {
+  if (pointer.active) {
     const pointX = point.x + point.dx;
     const pointY = point.y + point.dy;
     const deltaX = pointX - pointer.x;
@@ -391,241 +353,12 @@ function updatePointScatter(point) {
     }
   }
 
-  const restoreStrength = archiveState === "ritual" ? 0 : 0.12;
-  const damping = archiveState === "ritual" ? 0.965 : 0.7;
-  const maxSpeed = archiveState === "ritual" ? Math.max(cellX, cellY) * 1.35 : Infinity;
-
-  point.vx += -point.dx * restoreStrength;
-  point.vy += -point.dy * restoreStrength;
-  point.vx *= damping;
-  point.vy *= damping;
-  point.vx = clamp(point.vx, -maxSpeed, maxSpeed);
-  point.vy = clamp(point.vy, -maxSpeed, maxSpeed);
+  point.vx += -point.dx * 0.12;
+  point.vy += -point.dy * 0.12;
+  point.vx *= 0.7;
+  point.vy *= 0.7;
   point.dx += point.vx;
   point.dy += point.vy;
-}
-
-function clearArchiveTimers() {
-  while (archiveTimers.length > 0) {
-    window.clearTimeout(archiveTimers.pop());
-  }
-}
-
-function scheduleArchiveStep(callback, delay) {
-  const timer = window.setTimeout(callback, prefersReducedMotion.matches ? 0 : delay);
-  archiveTimers.push(timer);
-}
-
-function triggerArchiveScatter() {
-  for (const point of maskPoints) {
-    const scatter = getInnerScatterVector(point);
-    const force = random(1.2, 3.6) * scatter.innerBias;
-
-    if (scatter.innerBias < 0.02) {
-      continue;
-    }
-
-    point.vx += scatter.innerDirection * force + random(-0.22, 0.22) * scatter.innerBias;
-    point.vy += (scatter.verticalAim * 0.34 + scatter.laneNoise * 0.24) * force;
-    point.dx += scatter.innerDirection * random(cellX * 0.2, cellX * 1.5) * scatter.innerBias;
-    point.dy += (scatter.verticalAim + scatter.laneNoise * 0.36) * random(cellY * 0.08, cellY * 0.7) * scatter.innerBias;
-  }
-}
-
-function resetArchiveScatter() {
-  for (const point of maskPoints) {
-    point.dx = 0;
-    point.dy = 0;
-    point.vx = 0;
-    point.vy = 0;
-  }
-}
-
-function setPrologueEntryDisabled(disabled) {
-  for (const button of prologueEntryButtons) {
-    button.disabled = disabled;
-  }
-}
-
-function setDoctrineCloserDisabled(disabled) {
-  for (const button of doctrineCloserButtons) {
-    button.disabled = disabled;
-  }
-}
-
-function enterArchive() {
-  if (!enterButton || !prologueScene || archiveState !== "idle" || hasEnteredArchive) {
-    return;
-  }
-
-  archiveState = "ritual";
-  hasEnteredArchive = true;
-  ritualStartedFrame = frame;
-  pointer.active = false;
-  intro.classList.remove("is-prologue", "is-dissolving", "is-entering", "is-resetting");
-  intro.classList.add("is-ritual");
-  enterButton.disabled = true;
-  triggerArchiveScatter();
-
-  scheduleArchiveStep(() => {
-    intro.classList.add("is-dissolving");
-  }, 1360);
-
-  scheduleArchiveStep(() => {
-    intro.classList.add("is-prologue");
-    prologueScene.setAttribute("aria-hidden", "false");
-    setPrologueEntryDisabled(false);
-
-    if (archiveBackButton) {
-      archiveBackButton.disabled = false;
-    }
-  }, 2180);
-
-  scheduleArchiveStep(() => {
-    archiveState = "prologue";
-    intro.classList.remove("is-ritual", "is-dissolving");
-  }, 3300);
-}
-
-function enterDoctrine() {
-  if (!prologueScene || !doctrineScene || archiveState !== "prologue") {
-    return;
-  }
-
-  archiveState = "doctrine-entering";
-  intro.classList.remove("is-resetting", "is-doctrine", "is-doctrine-hover", "is-doctrine-accepted");
-  intro.classList.add("is-prologue-leaving", "is-doctrine-entering");
-  doctrineScene.setAttribute("aria-hidden", "false");
-  setPrologueEntryDisabled(true);
-
-  scheduleArchiveStep(() => {
-    prologueScene.setAttribute("aria-hidden", "true");
-    intro.classList.remove("is-prologue");
-  }, 1600);
-
-  scheduleArchiveStep(() => {
-    archiveState = "doctrine";
-    intro.classList.remove("is-prologue-leaving", "is-doctrine-entering", "is-dissolving");
-    intro.classList.add("is-doctrine");
-    setDoctrineCloserDisabled(false);
-  }, 2600);
-}
-
-function returnToPrologue() {
-  if (!prologueScene || !doctrineScene) {
-    return;
-  }
-
-  clearArchiveTimers();
-  archiveState = "prologue";
-  pointer.active = false;
-  intro.classList.remove(
-    "is-prologue-leaving",
-    "is-doctrine",
-    "is-doctrine-entering",
-    "is-doctrine-hover",
-    "is-doctrine-accepted",
-  );
-  intro.classList.add("is-prologue");
-  prologueScene.setAttribute("aria-hidden", "false");
-  doctrineScene.setAttribute("aria-hidden", "true");
-  setPrologueEntryDisabled(false);
-  setDoctrineCloserDisabled(true);
-
-  if (archiveBackButton) {
-    archiveBackButton.disabled = false;
-  }
-}
-
-function returnToIntro() {
-  if (!prologueScene) {
-    return;
-  }
-
-  clearArchiveTimers();
-  archiveState = "idle";
-  hasEnteredArchive = false;
-  ritualStartedFrame = 0;
-  pointer.active = false;
-  intro.classList.remove(
-    "is-prologue",
-    "is-prologue-leaving",
-    "is-ritual",
-    "is-dissolving",
-    "is-entering",
-    "is-doctrine",
-    "is-doctrine-entering",
-    "is-doctrine-hover",
-    "is-doctrine-accepted",
-  );
-  intro.classList.add("is-resetting");
-  prologueScene.setAttribute("aria-hidden", "true");
-
-  if (doctrineScene) {
-    doctrineScene.setAttribute("aria-hidden", "true");
-  }
-
-  resetArchiveScatter();
-  setPrologueEntryDisabled(false);
-  setDoctrineCloserDisabled(false);
-
-  if (enterButton) {
-    enterButton.disabled = false;
-  }
-
-  if (archiveBackButton) {
-    archiveBackButton.disabled = true;
-  }
-
-  scheduleArchiveStep(() => {
-    intro.classList.remove("is-resetting");
-  }, 80);
-}
-
-function restoreDoctrineFromAccepted() {
-  if (archiveState !== "doctrine-accepted") {
-    return;
-  }
-
-  archiveState = "doctrine";
-  intro.classList.remove("is-doctrine-accepted");
-  intro.classList.add("is-doctrine");
-  setDoctrineCloserDisabled(false);
-}
-
-function goBack() {
-  if (archiveState === "prologue") {
-    returnToIntro();
-    return;
-  }
-
-  if (archiveState === "doctrine" || archiveState === "doctrine-entering") {
-    returnToPrologue();
-    return;
-  }
-
-  if (archiveState === "doctrine-accepted") {
-    restoreDoctrineFromAccepted();
-  }
-}
-
-function setDoctrineHover(isHovering) {
-  if (archiveState !== "doctrine") {
-    return;
-  }
-
-  intro.classList.toggle("is-doctrine-hover", isHovering);
-}
-
-function acceptDoctrine() {
-  if (archiveState !== "doctrine") {
-    return;
-  }
-
-  archiveState = "doctrine-accepted";
-  intro.classList.remove("is-doctrine-hover");
-  intro.classList.add("is-doctrine-accepted");
-  setDoctrineCloserDisabled(true);
 }
 
 function drawSignalTears() {
@@ -641,7 +374,7 @@ function drawSignalTears() {
 
     for (let step = 0; step < length; step += 1) {
       ctx.globalAlpha = alpha * (1 - step / length);
-      ctx.fillStyle = "#ede8df";
+      ctx.fillStyle = colors.paper;
       ctx.fillText(looseGlyphs[Math.floor(Math.random() * looseGlyphs.length)], x + step * cellX, y);
     }
   }
@@ -652,7 +385,7 @@ function drawSignalTears() {
 function drawReferenceStyleCaptionMarks() {
   ctx.save();
   ctx.globalAlpha = 0.14;
-  ctx.fillStyle = "#c9c5bd";
+  ctx.fillStyle = colors.ash;
   ctx.font = `${Math.max(5, cellY * 0.68)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
   ctx.textBaseline = "middle";
 
@@ -677,17 +410,15 @@ function drawCaptionMarkRange(startX, endX) {
 }
 
 function render(timestamp = 0) {
-  const elapsed = timestamp - lastRenderTime;
-
-  if (elapsed < maxFrameMs) {
+  if (timestamp - lastRenderTime < maxFrameMs) {
     requestAnimationFrame(render);
     return;
   }
 
-  lastRenderTime = timestamp - (elapsed % maxFrameMs);
+  lastRenderTime = timestamp;
   frame += 1;
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#000";
+  ctx.fillStyle = colors.black;
   ctx.fillRect(0, 0, width, height);
 
   drawBackgroundMatrix();
@@ -706,7 +437,9 @@ function start() {
   render();
 }
 
-if (sourceImage.complete) {
+if (!sourceImage) {
+  start();
+} else if (sourceImage.complete) {
   start();
 } else {
   sourceImage.addEventListener("load", start, { once: true });
@@ -740,23 +473,3 @@ canvas.addEventListener("pointerdown", (event) => {
 canvas.addEventListener("pointerup", () => {
   pointer.strength = 12;
 });
-
-if (enterButton && prologueScene) {
-  enterButton.addEventListener("click", enterArchive);
-}
-
-if (archiveBackButton) {
-  archiveBackButton.addEventListener("click", goBack);
-}
-
-for (const button of prologueEntryButtons) {
-  button.addEventListener("click", enterDoctrine);
-}
-
-for (const button of doctrineCloserButtons) {
-  button.addEventListener("mouseenter", () => setDoctrineHover(true));
-  button.addEventListener("mouseleave", () => setDoctrineHover(false));
-  button.addEventListener("focus", () => setDoctrineHover(true));
-  button.addEventListener("blur", () => setDoctrineHover(false));
-  button.addEventListener("click", acceptDoctrine);
-}
