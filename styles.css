@@ -1789,6 +1789,8 @@ body {
 .archive-intro.is-call-dialing .broadcast-ad,
 .archive-intro.is-call-answered .broadcast-ad,
 .archive-intro.is-caller-recorded .broadcast-ad {
+  visibility: hidden;
+  opacity: 0;
   filter: brightness(0.34) contrast(1.16) saturate(0.56);
 }
 
