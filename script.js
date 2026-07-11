@@ -9,6 +9,7 @@ const prologueEntryButtons = document.querySelectorAll(".prologue-copy");
 const doctrineScene = document.querySelector(".doctrine-scene");
 const doctrineCloserButtons = document.querySelectorAll("button.doctrine-closer");
 const broadcastScene = document.querySelector(".broadcast-scene");
+const broadcastCamera = document.querySelector(".broadcast-camera");
 const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
 const callSequence = document.querySelector(".call-sequence");
 const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
@@ -974,16 +975,22 @@ function enterBroadcast() {
   setDoctrineCloserDisabled(true);
   setBroadcastCallDisabled(true);
 
-  scheduleArchiveStep(() => {
-    archiveState = "broadcast";
-    intro.classList.remove("is-broadcast-entering", "is-doctrine");
-    intro.classList.add("is-broadcast");
-    setBroadcastCallDisabled(false);
+  scheduleArchiveStep(completeBroadcast, 3000);
+}
 
-    if (doctrineScene) {
-      doctrineScene.setAttribute("aria-hidden", "true");
-    }
-  }, 3000);
+function completeBroadcast() {
+  if (archiveState !== "broadcast-entering") {
+    return;
+  }
+
+  archiveState = "broadcast";
+  intro.classList.remove("is-broadcast-entering", "is-doctrine");
+  intro.classList.add("is-broadcast");
+  setBroadcastCallDisabled(false);
+
+  if (doctrineScene) {
+    doctrineScene.setAttribute("aria-hidden", "true");
+  }
 }
 
 function returnToOriginalBroadcast() {
@@ -1250,6 +1257,14 @@ for (const button of doctrineCloserButtons) {
     }
 
     acceptDoctrine();
+  });
+}
+
+if (broadcastCamera) {
+  broadcastCamera.addEventListener("animationend", (event) => {
+    if (event.animationName === "broadcastCameraPullback") {
+      completeBroadcast();
+    }
   });
 }
 
