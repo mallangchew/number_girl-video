@@ -894,7 +894,8 @@ body {
       #1e2dc5 85.68% 100%
     );
   opacity: 0;
-  filter: brightness(1.02) contrast(1.08) saturate(0.88) blur(0.08px);
+  box-shadow: inset 0 0 14px rgb(6 8 22 / 42%);
+  filter: brightness(0.94) contrast(1.18) saturate(0.68) blur(0.34px);
   transform: translateZ(0);
   will-change: opacity, filter;
 }
@@ -919,19 +920,23 @@ body {
   position: relative;
   z-index: 1;
   padding: 0.08em 0.18em;
-  color: #f7f4e9;
+  color: #e6e2d5;
   font-family: "Courier New", monospace;
   font-size: clamp(8px, 1.7vw, 21px);
   font-weight: 700;
   letter-spacing: 0.03em;
   line-height: 1;
   text-align: center;
-  text-shadow: 1px 0 #f40b14, -1px 0 #16d9f1, 0 1px #111;
+  text-shadow: 1px 0 #c92932, -1px 0 #148c9c, 0 1px #111;
 }
 
 .archive-intro.is-broadcast-entering .broadcast-test-card {
   opacity: 1;
   animation: broadcastTestCardOut 1200ms cubic-bezier(0.22, 0.65, 0.22, 1) 3000ms forwards;
+}
+
+.archive-intro.is-broadcast-entering .broadcast-test-card span {
+  animation: broadcastTestCardJitter 220ms steps(2, end) infinite;
 }
 
 .archive-intro.is-broadcast .broadcast-test-card {
@@ -1083,14 +1088,7 @@ body {
 }
 
 .broadcast-static__snow {
-  background-image:
-    radial-gradient(circle at 13% 27%, rgb(255 255 255 / 72%) 0 1px, transparent 2px),
-    radial-gradient(circle at 41% 61%, rgb(195 225 255 / 58%) 0 1px, transparent 2px),
-    radial-gradient(circle at 73% 31%, rgb(255 179 246 / 44%) 0 1px, transparent 2px),
-    radial-gradient(circle at 82% 78%, rgb(255 255 255 / 52%) 0 1px, transparent 2px);
-  background-size: 13px 17px, 19px 23px, 29px 31px, 37px 41px;
-  opacity: 0.32;
-  animation: staticSnow 760ms steps(4, end) infinite;
+  display: none;
 }
 
 .broadcast-static__bar {
@@ -1968,6 +1966,20 @@ body {
   100% {
     opacity: 0;
     filter: brightness(1.4) contrast(1.28) saturate(0.42) blur(1px);
+  }
+}
+
+@keyframes broadcastTestCardJitter {
+  0% {
+    transform: translateX(-0.35px);
+  }
+
+  50% {
+    transform: translateX(0.45px);
+  }
+
+  100% {
+    transform: translateX(0);
   }
 }
 
