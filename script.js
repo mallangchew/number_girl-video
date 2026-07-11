@@ -983,7 +983,7 @@ function enterBroadcast() {
     if (doctrineScene) {
       doctrineScene.setAttribute("aria-hidden", "true");
     }
-  }, 7100);
+  }, 3000);
 }
 
 function returnToOriginalBroadcast() {
