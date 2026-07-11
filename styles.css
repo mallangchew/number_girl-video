@@ -1233,7 +1233,8 @@ body {
 .archive-intro.is-call-answered .call-sequence,
 .archive-intro.is-caller-recorded .call-sequence,
 .archive-intro.is-love-broadcast .call-sequence,
-.archive-intro.is-love-news .call-sequence {
+.archive-intro.is-love-news .call-sequence,
+.archive-intro.is-trend-interviews .call-sequence {
   opacity: 1;
 }
 
@@ -1282,7 +1283,8 @@ body {
 .archive-intro.is-call-answered .call-sequence__layer--answered,
 .archive-intro.is-caller-recorded .call-sequence__layer--recorded,
 .archive-intro.is-love-broadcast .call-sequence__layer--final,
-.archive-intro.is-love-news .call-sequence__layer--news {
+.archive-intro.is-love-news .call-sequence__layer--news,
+.archive-intro.is-trend-interviews .call-sequence__layer--interview {
   opacity: 1;
   transform: scale(1);
 }
@@ -1536,6 +1538,163 @@ body {
   pointer-events: none;
 }
 
+.call-sequence__layer--interview {
+  display: block;
+  background: #09090a;
+  filter: contrast(1.09) saturate(0.72) brightness(0.84);
+}
+
+.camcorder-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0d0d0e;
+}
+
+.camcorder-frame__image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(0.35px) contrast(0.92) saturate(0.76) brightness(0.9);
+}
+
+.camcorder-frame__image--stare {
+  opacity: 0;
+  transform: scale(1.01);
+}
+
+.camcorder-frame::before,
+.camcorder-frame::after {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  content: "";
+  pointer-events: none;
+}
+
+.camcorder-frame::before {
+  background:
+    repeating-linear-gradient(180deg, rgb(255 250 230 / 13%) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 50% 52%, transparent 44%, rgb(0 0 0 / 43%) 100%);
+  opacity: 0.4;
+  mix-blend-mode: screen;
+}
+
+.camcorder-frame::after {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 7px, rgb(235 245 255 / 45%) 7px 9px, transparent 9px 14px),
+    linear-gradient(90deg, rgb(21 65 112 / 30%), transparent 32% 68%, rgb(170 53 41 / 23%));
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.archive-intro.is-trend-interviews .camcorder-frame {
+  animation: camcorderJitter 820ms steps(3, end) infinite;
+}
+
+.archive-intro.is-trend-interviews .camcorder-frame::after {
+  animation: interviewNoiseBurst 260ms steps(2, end) 4.64s both;
+}
+
+.archive-intro.is-trend-interviews .camcorder-frame__image--stare {
+  animation: interviewStare 200ms steps(2, end) 4.86s forwards;
+}
+
+.camcorder-timecode,
+.camcorder-caption,
+.camcorder-status {
+  position: absolute;
+  z-index: 4;
+  color: rgb(246 240 225 / 92%);
+  font-family: "Courier New", monospace !important;
+  font-weight: 700 !important;
+  text-shadow: 1px 1px 0 rgb(23 43 65 / 90%), -1px 0 0 rgb(131 49 62 / 70%);
+}
+
+.camcorder-timecode {
+  top: clamp(7px, 1.3vw, 16px);
+  left: clamp(9px, 1.7vw, 22px);
+  font-size: clamp(7px, 1.08vw, 15px);
+  letter-spacing: 0.06em !important;
+  opacity: 0.78;
+}
+
+.archive-intro.is-trend-interviews .camcorder-timecode {
+  animation: timecodeBlink 680ms steps(2, end) infinite;
+}
+
+.camcorder-caption {
+  right: 7%;
+  bottom: 9%;
+  left: 7%;
+  font-size: clamp(13px, 2.05vw, 28px);
+  line-height: 1.25;
+  opacity: 0;
+}
+
+.camcorder-caption--final {
+  bottom: 12%;
+  color: rgb(255 238 239 / 94%);
+  font-size: clamp(14px, 2.3vw, 31px);
+  letter-spacing: 0.03em !important;
+  text-transform: lowercase;
+}
+
+.camcorder-status {
+  right: 7%;
+  bottom: 5%;
+  left: 7%;
+  color: rgb(255 220 224 / 78%);
+  font-size: clamp(8px, 1.15vw, 16px);
+  letter-spacing: 0.08em !important;
+  opacity: 0;
+}
+
+.archive-intro.is-trend-interviews .camcorder-caption--1 { animation: interviewLine 980ms steps(2, end) 0.45s both; }
+.archive-intro.is-trend-interviews .camcorder-caption--2 { animation: interviewLine 980ms steps(2, end) 1.48s both; }
+.archive-intro.is-trend-interviews .camcorder-caption--3 { animation: interviewLine 980ms steps(2, end) 2.51s both; }
+.archive-intro.is-trend-interviews .camcorder-caption--4 { animation: interviewLine 980ms steps(2, end) 3.54s both; }
+.archive-intro.is-trend-interviews .camcorder-caption--final { animation: interviewFinalLine 450ms steps(2, end) 5.08s forwards; }
+.archive-intro.is-trend-interviews .camcorder-status { animation: interviewFinalLine 450ms steps(2, end) 5.7s forwards; }
+
+@keyframes camcorderJitter {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  33% { transform: translate3d(-0.45%, 0.3%, 0); }
+  66% { transform: translate3d(0.35%, -0.22%, 0); }
+}
+
+@keyframes timecodeBlink {
+  0%, 58% { opacity: 0.78; }
+  59%, 70% { opacity: 0.22; }
+  71%, 100% { opacity: 0.78; }
+}
+
+@keyframes interviewLine {
+  0%, 12% { opacity: 0; transform: translateY(3px); }
+  13%, 78% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+
+@keyframes interviewFinalLine {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes interviewNoiseBurst {
+  0% { opacity: 0; transform: translateY(0); }
+  20%, 78% { opacity: 0.72; transform: translateY(-2%); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+
+@keyframes interviewStare {
+  from { opacity: 0; transform: scale(1.01); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
 .call-mute {
   position: absolute;
   right: clamp(16px, 3vw, 44px);
@@ -1659,7 +1818,10 @@ body {
 
 .archive-intro.is-love-news .broadcast-ad,
 .archive-intro.is-love-news .broadcast-call-target,
-.archive-intro.is-love-news .broadcast-subtitle-call {
+.archive-intro.is-love-news .broadcast-subtitle-call,
+.archive-intro.is-trend-interviews .broadcast-ad,
+.archive-intro.is-trend-interviews .broadcast-call-target,
+.archive-intro.is-trend-interviews .broadcast-subtitle-call {
   animation: none;
   opacity: 0;
   pointer-events: none;
@@ -1669,6 +1831,10 @@ body {
   opacity: 0.34;
   filter: grayscale(0.45) brightness(1.1) contrast(1.28) saturate(0.9);
   z-index: 5;
+}
+
+.archive-intro.is-trend-interviews .broadcast-static {
+  opacity: 0;
 }
 
 .archive-intro.is-broadcast-power-cut .call-sequence {
@@ -2211,6 +2377,12 @@ body {
   .archive-intro.is-broadcast-entering .broadcast-static,
   .archive-intro.is-broadcast .broadcast-subtitle-call,
   .archive-intro.is-broadcast-called .broadcast-call-layer::after,
+  .archive-intro.is-trend-interviews .camcorder-frame,
+  .archive-intro.is-trend-interviews .camcorder-frame::after,
+  .archive-intro.is-trend-interviews .camcorder-frame__image--stare,
+  .archive-intro.is-trend-interviews .camcorder-timecode,
+  .archive-intro.is-trend-interviews .camcorder-caption,
+  .archive-intro.is-trend-interviews .camcorder-status,
   .call-sequence__rings span,
   .archive-intro.is-call-answered .call-dialogue__line,
   .archive-intro.is-call-awaiting .call-advance-outside,
@@ -2242,6 +2414,11 @@ body {
   .archive-intro.is-love-broadcast .broadcast-subtitle-call {
     opacity: 0;
     pointer-events: none;
+  }
+
+  .archive-intro.is-trend-interviews .camcorder-caption--final,
+  .archive-intro.is-trend-interviews .camcorder-status {
+    opacity: 1;
   }
 
   .archive-intro.is-call-dialing .broadcast-subtitle-call,
