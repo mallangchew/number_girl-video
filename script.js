@@ -1020,10 +1020,9 @@ function finishCallSequence() {
   announceCallStatus("Love broadcast. 사랑하세요. 모두 사랑하세요.");
   scheduleCallStep(() => {
     if (archiveState === "love-broadcast") {
-      setCallAdvanceMode("to-news");
-      announceCallStatus("Love broadcast. Click to continue.");
+      showLoveNews();
     }
-  }, 1200);
+  }, 3200);
 }
 
 function showLoveNews() {
@@ -1045,10 +1044,9 @@ function showLoveNews() {
 
   scheduleCallStep(() => {
     if (archiveState === "love-news") {
-      setCallAdvanceMode("to-interviews");
-      announceCallStatus("Love World trend archive. Click to continue.");
+      showTrendInterviews();
     }
-  }, 2200);
+  }, 3600);
 }
 
 function showTrendInterviews() {
@@ -1088,14 +1086,6 @@ function continueCallSequence() {
     return;
   }
 
-  if (callAdvanceMode === "to-news" && archiveState === "love-broadcast") {
-    showLoveNews();
-    return;
-  }
-
-  if (callAdvanceMode === "to-interviews" && archiveState === "love-news") {
-    showTrendInterviews();
-  }
 }
 
 function startCallSequence() {
