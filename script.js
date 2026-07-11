@@ -46,7 +46,7 @@ const maxFrameMs = 1000 / 24;
 const archiveTimers = [];
 const callTimers = [];
 const callAudioNodes = new Set();
-const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news"];
+const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news", "is-trend-interviews"];
 const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
@@ -1038,6 +1038,26 @@ function showLoveNews() {
   scheduleCallStep(() => {
     intro.classList.remove("is-broadcast-power-on");
   }, 1320);
+
+  scheduleCallStep(() => {
+    if (archiveState === "love-news") {
+      setCallAdvanceMode("to-interviews");
+      announceCallStatus("Love World trend archive. Click to continue.");
+    }
+  }, 2200);
+}
+
+function showTrendInterviews() {
+  setCallAdvanceMode(null);
+  clearCallTimers();
+  setCallState("trend-interviews");
+  announceCallStatus("Trend archive. Interview recording started.");
+
+  scheduleCallStep(() => {
+    if (archiveState === "trend-interviews") {
+      announceCallStatus("Love status unconfirmed.");
+    }
+  }, 6100);
 }
 
 function showRecordedCallState() {
@@ -1066,6 +1086,11 @@ function continueCallSequence() {
 
   if (callAdvanceMode === "to-news" && archiveState === "love-broadcast") {
     showLoveNews();
+    return;
+  }
+
+  if (callAdvanceMode === "to-interviews" && archiveState === "love-news") {
+    showTrendInterviews();
   }
 }
 
