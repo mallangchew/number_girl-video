@@ -1083,8 +1083,8 @@ body {
       rgb(90 152 255 / 16%) 1px 3px,
       rgb(14 20 72 / 14%) 3px 6px
     );
-  opacity: 0.48;
-  animation: staticField 520ms steps(3, end) infinite;
+  opacity: 0.58;
+  animation: staticField 360ms steps(4, end) infinite;
 }
 
 .broadcast-static__snow {
@@ -1102,8 +1102,8 @@ body {
       transparent
     );
   filter: blur(7px);
-  opacity: 0.3;
-  animation: trackingBar 2600ms linear infinite;
+  opacity: 0.36;
+  animation: trackingBar 1800ms linear infinite;
 }
 
 .broadcast-static__scanlines {
@@ -1118,6 +1118,7 @@ body {
     );
   opacity: 0.32;
   transform: translateZ(0);
+  animation: staticScanlines 140ms steps(2, end) infinite;
 }
 
 .broadcast-call-layer {
@@ -2193,15 +2194,27 @@ body {
 
 @keyframes staticField {
   0% {
-    transform: translate3d(0, -0.7%, 0) scaleY(1.025);
+    transform: translate3d(0, -1.25%, 0) scaleY(1.025);
   }
 
   50% {
-    transform: translate3d(0, 0.35%, 0) scaleY(1.012);
+    transform: translate3d(0, 0.5%, 0) scaleY(1.012);
   }
 
   100% {
-    transform: translate3d(0, 0.75%, 0) scaleY(1.02);
+    transform: translate3d(0, 1.15%, 0) scaleY(1.02);
+  }
+}
+
+@keyframes staticScanlines {
+  0% {
+    background-position: 0 0;
+    opacity: 0.22;
+  }
+
+  100% {
+    background-position: 0 4px;
+    opacity: 0.42;
   }
 }
 
