@@ -108,7 +108,7 @@ function rebuildMask() {
     return;
   }
 
-  if (!sourceImage.complete || !sourceImage.naturalWidth) {
+  if (!sourceImage || !sourceImage.complete || !sourceImage.naturalWidth) {
     return;
   }
 
@@ -799,7 +799,7 @@ function start() {
   render();
 }
 
-if (sourceImage.complete) {
+if (!sourceImage || sourceImage.complete) {
   start();
 } else {
   sourceImage.addEventListener("load", start, { once: true });

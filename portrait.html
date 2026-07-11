@@ -5,30 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="A monochrome digital archive intro with interactive numeric angel motion."
+      content="A monochrome digital archive figure rendered with interactive numeric motion."
     >
     <meta name="theme-color" content="#000000">
-    <meta property="og:title" content="Love Cult Archive">
-    <meta
-      property="og:description"
-      content="A monochrome digital archive intro with interactive numeric angel motion."
-    >
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="assets/angel-archive-closeup.jpg">
-    <title>Love Cult Archive</title>
+    <title>Love Cult Archive - Figure</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <style>
       :root{color-scheme:dark;--color-black:0 0 0;--color-paper:244 241 236;--color-paper-soft:236 231 221;--color-ash:201 197 189;--color-white:255 255 255;--font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--font-condensed:"Arial Narrow","Helvetica Neue Condensed","Roboto Condensed",Arial,sans-serif;--frame-portrait-width-from-height:56.25vh;--frame-portrait-height-from-width:177.7778vw;--frame-landscape-width-from-height:177.7778vh;--frame-landscape-height-from-width:56.25vw;background:rgb(var(--color-black))}*{box-sizing:border-box}html,body{width:100%;margin:0;overflow:hidden;background:rgb(var(--color-black))}body{display:grid;min-height:100vh;min-height:100dvh;place-items:center;font-family:var(--font-mono)}.archive-intro{position:relative;width:min(100vw,var(--frame-portrait-width-from-height));height:min(100vh,var(--frame-portrait-height-from-width));overflow:hidden;background:rgb(var(--color-black));aspect-ratio:9/16;isolation:isolate}.archive-intro--wide{width:min(100vw,var(--frame-landscape-width-from-height));height:min(100vh,var(--frame-landscape-height-from-width));aspect-ratio:16/9}#digits{position:absolute;inset:0;z-index:3;width:100%;height:100%;mix-blend-mode:screen}.archive-title{position:absolute;inset:0;z-index:7;color:rgb(var(--color-paper-soft));text-align:center;pointer-events:none}.archive-title__main,.archive-title__sub{position:absolute;left:50%;z-index:1;margin:0;color:rgb(var(--color-paper));font-family:var(--font-condensed);font-weight:400;font-stretch:condensed;letter-spacing:0;line-height:1;text-shadow:0 0 1px rgb(var(--color-white)/80%),0 0 10px rgb(var(--color-white)/16%);transform:translate(-50%,-50%);white-space:nowrap}.archive-title__main{top:51.5%;font-size:clamp(22px,2.35vw,32px);opacity:.95}.archive-title__sub{top:83%;font-size:clamp(24px,2.4vw,34px);opacity:.96}a.archive-title__sub{text-decoration:none;pointer-events:auto;cursor:pointer}.archive-paint-mark{position:absolute;left:50%;bottom:5.5%;z-index:1;margin:0;color:rgb(var(--color-ash)/18%);font-family:var(--font-mono);font-size:10px;line-height:1;pointer-events:none;transform:translateX(-50%)}
     </style>
-    <link rel="preload" href="styles.css?v=20260711merge" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="styles.css?v=20260711merge"></noscript>
+    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
   </head>
   <body>
-    <main
-      class="archive-intro archive-intro--wide"
-      data-layout="wide-duo"
-      aria-label="Love Cult Archive intro"
-    >
+    <main class="archive-intro" aria-label="Love Cult Archive figure">
       <noscript>
         <img
           class="angel-art"
@@ -40,10 +29,7 @@
         >
       </noscript>
       <canvas id="digits" aria-hidden="true"></canvas>
-      <div class="archive-title" aria-label="is your love heaven or hell?">
-        <p class="archive-title__main">is your love heaven or hell?</p>
-        <a class="archive-title__sub" href="portrait.html">enter</a>
-      </div>
+      <p class="archive-paint-mark" aria-hidden="true">0</p>
       <div class="scanlines" aria-hidden="true"></div>
       <div class="paper-noise" aria-hidden="true"></div>
     </main>
@@ -51,10 +37,10 @@
       (() => {
         const loadArchive = () => {
           const maskScript = document.createElement("script");
-          maskScript.src = "mask-data.js?v=20260711merge";
+          maskScript.src = "mask-data.js";
           maskScript.onload = () => {
             const archiveScript = document.createElement("script");
-            archiveScript.src = "script.js?v=20260711merge";
+            archiveScript.src = "script.js";
             document.head.append(archiveScript);
           };
           document.head.append(maskScript);
