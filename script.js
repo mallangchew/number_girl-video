@@ -975,7 +975,7 @@ function enterBroadcast() {
   setDoctrineCloserDisabled(true);
   setBroadcastCallDisabled(true);
 
-  scheduleArchiveStep(completeBroadcast, 3600);
+  scheduleArchiveStep(completeBroadcast, 4200);
 }
 
 function completeBroadcast() {
