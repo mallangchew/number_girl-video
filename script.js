@@ -916,7 +916,7 @@ function returnToDoctrineFromBroadcast() {
 }
 
 function goBack() {
-  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast"].includes(archiveState)) {
+  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast", "love-news", "trend-interviews"].includes(archiveState)) {
     returnToOriginalBroadcast();
     return;
   }
@@ -974,6 +974,10 @@ function enterBroadcast() {
   broadcastScene.setAttribute("aria-hidden", "false");
   setDoctrineCloserDisabled(true);
   setBroadcastCallDisabled(true);
+
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
 
   scheduleArchiveStep(completeBroadcast, 4200);
 }
