@@ -941,7 +941,8 @@ body {
 }
 
 .archive-intro.is-broadcast .broadcast-static {
-  opacity: 0.22;
+  opacity: 0.07;
+  mix-blend-mode: normal;
 }
 
 .broadcast-scene::before,
