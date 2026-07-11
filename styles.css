@@ -921,7 +921,7 @@ body {
   z-index: 1;
   padding: 0.08em 0.18em;
   color: #e6e2d5;
-  font-family: "Courier New", monospace;
+  font-family: "Arial Narrow", Arial, sans-serif;
   font-size: clamp(8px, 1.7vw, 21px);
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -2138,11 +2138,11 @@ body {
 
 @keyframes broadcastTestCardJitter {
   0% {
-    transform: translateX(-0.35px);
+    transform: translateY(-0.22px);
   }
 
   50% {
-    transform: translateX(0.45px);
+    transform: translateY(0.3px);
   }
 
   100% {
@@ -2193,15 +2193,15 @@ body {
 
 @keyframes staticField {
   0% {
-    transform: translate3d(-1%, -1%, 0) scale(1.03);
+    transform: translate3d(0, -0.7%, 0) scaleY(1.025);
   }
 
   50% {
-    transform: translate3d(1.5%, 0.5%, 0) scale(1.06);
+    transform: translate3d(0, 0.35%, 0) scaleY(1.012);
   }
 
   100% {
-    transform: translate3d(-0.5%, 1%, 0) scale(1.04);
+    transform: translate3d(0, 0.75%, 0) scaleY(1.02);
   }
 }
 
