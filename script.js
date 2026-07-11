@@ -7,9 +7,14 @@ const prologueScene = document.querySelector(".prologue-scene");
 const archiveBackButton = document.querySelector(".archive-back");
 const prologueEntryButtons = document.querySelectorAll(".prologue-copy");
 const doctrineScene = document.querySelector(".doctrine-scene");
-const doctrineCloserButtons = document.querySelectorAll(".doctrine-closer");
+const doctrineCloserButtons = document.querySelectorAll("button.doctrine-closer");
 const broadcastScene = document.querySelector(".broadcast-scene");
 const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
+const callSequence = document.querySelector(".call-sequence");
+const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
+const callAdvanceButton = document.querySelector(".call-advance-outside");
+const callMuteButton = document.querySelector(".call-mute");
+const callLiveStatus = document.querySelector(".call-live-status");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const layout = intro?.dataset.layout || "portrait";
@@ -38,9 +43,20 @@ let lastRenderTime = 0;
 
 const maxFrameMs = 1000 / 24;
 const archiveTimers = [];
+const callTimers = [];
+const callAudioNodes = new Set();
+const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news"];
+const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
+const callDialingMs = 2800;
+const callAnsweredReadMs = 9600;
+const callRecordedLockMs = 900;
 let archiveState = "idle";
 let hasEnteredArchive = false;
 let ritualStartedFrame = 0;
+let callAudioContext = null;
+let callAudioGain = null;
+let isCallMuted = false;
+let callAdvanceMode = null;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
@@ -98,6 +114,7 @@ function resize() {
 
   cellX = Math.max(5, Math.round(width / 64));
   cellY = Math.max(7, Math.round(height / 104));
+  ctx.font = `${Math.max(5, cellY * 0.86)}px ${canvasFontFamily}`;
   rebuildMask();
   seedRainColumns();
 }
@@ -297,7 +314,7 @@ function drawBackgroundMatrix() {
   }
 
   ctx.save();
-  ctx.font = `${Math.max(5, cellY * 0.78)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  ctx.font = `${Math.max(5, cellY * 0.78)}px ${canvasFontFamily}`;
   ctx.textBaseline = "middle";
 
   for (const column of rainColumns) {
@@ -326,7 +343,7 @@ function drawBackgroundMatrix() {
 function drawAsciiMask() {
   ctx.save();
   ctx.textBaseline = "middle";
-  ctx.font = `${Math.max(5, cellY * 0.86)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  ctx.font = `${Math.max(5, cellY * 0.86)}px ${canvasFontFamily}`;
 
   for (const point of maskPoints) {
     updatePointScatter(point);
@@ -410,6 +427,251 @@ function updatePointScatter(point) {
 function clearArchiveTimers() {
   while (archiveTimers.length > 0) {
     window.clearTimeout(archiveTimers.pop());
+  }
+}
+
+function clearCallTimers() {
+  while (callTimers.length > 0) {
+    window.clearTimeout(callTimers.pop());
+  }
+}
+
+function scheduleCallStep(callback, delay) {
+  const timer = window.setTimeout(callback, delay);
+  callTimers.push(timer);
+}
+
+function setBroadcastCallDisabled(disabled) {
+  for (const button of broadcastCallButtons) {
+    button.disabled = disabled;
+    button.setAttribute("aria-disabled", String(disabled));
+  }
+}
+
+function announceCallStatus(message) {
+  if (callLiveStatus) {
+    callLiveStatus.textContent = message;
+  }
+}
+
+function updateCallLayerAccessibility(activeLayer) {
+  if (callSequence) {
+    const isVisible = Boolean(activeLayer);
+    callSequence.setAttribute("aria-hidden", String(!isVisible));
+    callSequence.inert = !isVisible;
+  }
+
+  for (const layer of callSequenceLayers) {
+    const isActive = layer.dataset.callLayer === activeLayer;
+    layer.setAttribute("aria-hidden", String(!isActive));
+  }
+}
+
+function setCallState(state) {
+  intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
+  archiveState = state;
+  intro.classList.add(`is-${state}`);
+  updateCallLayerAccessibility(state);
+}
+
+function setCallAdvanceMode(mode) {
+  callAdvanceMode = mode;
+  intro.classList.toggle("is-call-awaiting", Boolean(mode));
+
+  if (callSequence) {
+    callSequence.tabIndex = mode ? 0 : -1;
+  }
+
+  if (callAdvanceButton) {
+    callAdvanceButton.hidden = !mode;
+    callAdvanceButton.disabled = !mode;
+  }
+}
+
+function stopCallAudio() {
+  for (const node of callAudioNodes) {
+    try {
+      if (typeof node.stop === "function") {
+        node.stop();
+      }
+      node.disconnect();
+    } catch {}
+  }
+
+  callAudioNodes.clear();
+}
+
+function prepareCallAudio() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioContextClass) {
+    return false;
+  }
+
+  try {
+    if (!callAudioContext || callAudioContext.state === "closed") {
+      callAudioContext = new AudioContextClass();
+      callAudioGain = callAudioContext.createGain();
+      callAudioGain.gain.value = isCallMuted ? 0 : 1;
+      callAudioGain.connect(callAudioContext.destination);
+    }
+
+    if (callAudioContext.state === "suspended") {
+      callAudioContext.resume().catch(() => {});
+    }
+
+    return Boolean(callAudioGain);
+  } catch {
+    return false;
+  }
+}
+
+function trackCallAudioNode(node) {
+  callAudioNodes.add(node);
+  node.addEventListener("ended", () => {
+    callAudioNodes.delete(node);
+    try {
+      node.disconnect();
+    } catch {}
+  }, { once: true });
+}
+
+function playRingCue() {
+  if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
+    return;
+  }
+
+  try {
+    const now = callAudioContext.currentTime;
+    const cueGain = callAudioContext.createGain();
+    const lowTone = callAudioContext.createOscillator();
+    const overtone = callAudioContext.createOscillator();
+
+    lowTone.type = "sine";
+    lowTone.frequency.value = 188;
+    overtone.type = "sine";
+    overtone.frequency.value = 244;
+    cueGain.gain.setValueAtTime(0.0001, now);
+    cueGain.gain.exponentialRampToValueAtTime(0.055, now + 0.025);
+    cueGain.gain.setValueAtTime(0.055, now + 0.24);
+    cueGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.52);
+    lowTone.connect(cueGain);
+    overtone.connect(cueGain);
+    cueGain.connect(callAudioGain);
+    lowTone.start(now);
+    overtone.start(now);
+    lowTone.stop(now + 0.54);
+    overtone.stop(now + 0.54);
+    trackCallAudioNode(lowTone);
+    trackCallAudioNode(overtone);
+  } catch {}
+}
+
+function playStaticCut() {
+  intro.classList.add("is-call-static-cut");
+  scheduleCallStep(() => intro.classList.remove("is-call-static-cut"), 180);
+
+  if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
+    return;
+  }
+
+  try {
+    const duration = 0.16;
+    const frameCount = Math.ceil(callAudioContext.sampleRate * duration);
+    const buffer = callAudioContext.createBuffer(1, frameCount, callAudioContext.sampleRate);
+    const channel = buffer.getChannelData(0);
+    const source = callAudioContext.createBufferSource();
+    const cutGain = callAudioContext.createGain();
+    const now = callAudioContext.currentTime;
+
+    for (let index = 0; index < channel.length; index += 1) {
+      channel[index] = Math.random() * 2 - 1;
+    }
+
+    source.buffer = buffer;
+    cutGain.gain.setValueAtTime(0.075, now);
+    cutGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    source.connect(cutGain);
+    cutGain.connect(callAudioGain);
+    source.start(now);
+    source.stop(now + duration);
+    trackCallAudioNode(source);
+  } catch {}
+}
+
+function playNewsPowerAudio() {
+  if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
+    return;
+  }
+
+  try {
+    const now = callAudioContext.currentTime;
+    const clickGain = callAudioContext.createGain();
+    const clickOsc = callAudioContext.createOscillator();
+
+    clickOsc.type = "square";
+    clickOsc.frequency.value = 74;
+    clickGain.gain.setValueAtTime(0.0001, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.12, now + 0.006);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    clickOsc.connect(clickGain);
+    clickGain.connect(callAudioGain);
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.085);
+    trackCallAudioNode(clickOsc);
+
+    const noiseDuration = 0.38;
+    const frameCount = Math.ceil(callAudioContext.sampleRate * noiseDuration);
+    const buffer = callAudioContext.createBuffer(1, frameCount, callAudioContext.sampleRate);
+    const channel = buffer.getChannelData(0);
+    const noise = callAudioContext.createBufferSource();
+    const filter = callAudioContext.createBiquadFilter();
+    const noiseGain = callAudioContext.createGain();
+
+    for (let index = 0; index < channel.length; index += 1) {
+      channel[index] = (Math.random() * 2 - 1) * (1 - index / channel.length);
+    }
+
+    noise.buffer = buffer;
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(1850, now + 0.24);
+    filter.Q.setValueAtTime(4.2, now + 0.24);
+    noiseGain.gain.setValueAtTime(0.0001, now + 0.22);
+    noiseGain.gain.exponentialRampToValueAtTime(0.08, now + 0.27);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(callAudioGain);
+    noise.start(now + 0.22);
+    noise.stop(now + 0.62);
+    trackCallAudioNode(noise);
+
+    const humGain = callAudioContext.createGain();
+    const hum = callAudioContext.createOscillator();
+
+    hum.type = "sine";
+    hum.frequency.value = 92;
+    humGain.gain.setValueAtTime(0.0001, now + 0.58);
+    humGain.gain.exponentialRampToValueAtTime(0.035, now + 0.66);
+    humGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.18);
+    hum.connect(humGain);
+    humGain.connect(callAudioGain);
+    hum.start(now + 0.58);
+    hum.stop(now + 1.2);
+    trackCallAudioNode(hum);
+  } catch {}
+}
+
+function resetCallSequence() {
+  clearCallTimers();
+  stopCallAudio();
+  setCallAdvanceMode(null);
+  intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
+  updateCallLayerAccessibility(null);
+  setBroadcastCallDisabled(archiveState !== "broadcast");
+
+  if (callMuteButton) {
+    callMuteButton.hidden = true;
   }
 }
 
@@ -503,6 +765,7 @@ function enterDoctrine() {
     "is-broadcast-entering",
     "is-broadcast",
     "is-broadcast-called",
+    ...callStateClasses,
   );
   intro.classList.add("is-prologue-leaving", "is-doctrine-entering");
   doctrineScene.setAttribute("aria-hidden", "false");
@@ -530,6 +793,7 @@ function returnToPrologue() {
   }
 
   clearArchiveTimers();
+  resetCallSequence();
   archiveState = "prologue";
   pointer.active = false;
   intro.classList.remove(
@@ -541,6 +805,7 @@ function returnToPrologue() {
     "is-broadcast-entering",
     "is-broadcast",
     "is-broadcast-called",
+    ...callStateClasses,
   );
   intro.classList.add("is-prologue");
   prologueScene.setAttribute("aria-hidden", "false");
@@ -562,6 +827,7 @@ function returnToIntro() {
   }
 
   clearArchiveTimers();
+  resetCallSequence();
   archiveState = "idle";
   hasEnteredArchive = false;
   ritualStartedFrame = 0;
@@ -579,6 +845,7 @@ function returnToIntro() {
     "is-broadcast-entering",
     "is-broadcast",
     "is-broadcast-called",
+    ...callStateClasses,
   );
   intro.classList.add("is-resetting");
   prologueScene.setAttribute("aria-hidden", "true");
@@ -625,12 +892,15 @@ function returnToDoctrineFromBroadcast() {
   }
 
   clearArchiveTimers();
+  resetCallSequence();
   archiveState = "doctrine";
+  setBroadcastCallDisabled(true);
   pointer.active = false;
   intro.classList.remove(
     "is-broadcast-entering",
     "is-broadcast",
     "is-broadcast-called",
+    ...callStateClasses,
     "is-doctrine-hover",
     "is-doctrine-accepted",
   );
@@ -645,6 +915,11 @@ function returnToDoctrineFromBroadcast() {
 }
 
 function goBack() {
+  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast"].includes(archiveState)) {
+    returnToOriginalBroadcast();
+    return;
+  }
+
   if (archiveState === "prologue") {
     returnToIntro();
     return;
@@ -661,10 +936,6 @@ function goBack() {
   }
 
   if (archiveState === "broadcast-entering" || archiveState === "broadcast") {
-    returnToDoctrineFromBroadcast();
-  }
-
-  if (archiveState === "broadcast-called") {
     returnToDoctrineFromBroadcast();
   }
 }
@@ -694,17 +965,20 @@ function enterBroadcast() {
   }
 
   clearArchiveTimers();
+  resetCallSequence();
   archiveState = "broadcast-entering";
   pointer.active = false;
   intro.classList.remove("is-doctrine-hover", "is-doctrine-accepted", "is-broadcast", "is-broadcast-called");
   intro.classList.add("is-broadcast-entering");
   broadcastScene.setAttribute("aria-hidden", "false");
   setDoctrineCloserDisabled(true);
+  setBroadcastCallDisabled(true);
 
   scheduleArchiveStep(() => {
     archiveState = "broadcast";
     intro.classList.remove("is-broadcast-entering", "is-doctrine");
     intro.classList.add("is-broadcast");
+    setBroadcastCallDisabled(false);
 
     if (doctrineScene) {
       doctrineScene.setAttribute("aria-hidden", "true");
@@ -712,18 +986,136 @@ function enterBroadcast() {
   }, 7100);
 }
 
-function callHerFromBroadcast() {
+function returnToOriginalBroadcast() {
+  resetCallSequence();
+  archiveState = "broadcast";
+  setBroadcastCallDisabled(false);
+  intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-broadcast-power-cut", "is-broadcast-power-on");
+  intro.classList.add("is-broadcast");
+  announceCallStatus("Call cancelled. Original broadcast restored.");
+}
+
+function finishCallSequence() {
+  clearCallTimers();
+  stopCallAudio();
+  setCallAdvanceMode(null);
+  setCallState("love-broadcast");
+  setBroadcastCallDisabled(true);
+
+  if (callMuteButton) {
+    callMuteButton.hidden = true;
+  }
+
+  announceCallStatus("Love broadcast. 사랑하세요. 모두 사랑하세요.");
+  scheduleCallStep(() => {
+    if (archiveState === "love-broadcast") {
+      setCallAdvanceMode("to-news");
+      announceCallStatus("Love broadcast. Click to continue.");
+    }
+  }, 1200);
+}
+
+function showLoveNews() {
+  setCallAdvanceMode(null);
+  clearCallTimers();
+  intro.classList.add("is-broadcast-power-cut");
+  playNewsPowerAudio();
+  announceCallStatus("Broadcast signal lost.");
+
+  scheduleCallStep(() => {
+    setCallState("love-news");
+    intro.classList.add("is-broadcast-power-on");
+    announceCallStatus("Love World news. Love trend spreads.");
+  }, 620);
+
+  scheduleCallStep(() => {
+    intro.classList.remove("is-broadcast-power-on");
+  }, 1320);
+}
+
+function showRecordedCallState() {
+  setCallAdvanceMode(null);
+  setCallState("caller-recorded");
+  playStaticCut();
+  announceCallStatus("Signal lost. Your interest in love has been recorded. Love status curious. Faith level unconfirmed. Contact attempts one.");
+  scheduleCallStep(() => {
+    if (archiveState === "caller-recorded") {
+      setCallAdvanceMode("to-final");
+      announceCallStatus("Signal lost. Click to continue.");
+    }
+  }, callRecordedLockMs);
+}
+
+function continueCallSequence() {
+  if (callAdvanceMode === "to-recorded" && archiveState === "call-answered") {
+    showRecordedCallState();
+    return;
+  }
+
+  if (callAdvanceMode === "to-final" && archiveState === "caller-recorded") {
+    finishCallSequence();
+    return;
+  }
+
+  if (callAdvanceMode === "to-news" && archiveState === "love-broadcast") {
+    showLoveNews();
+  }
+}
+
+function startCallSequence() {
   if (archiveState !== "broadcast") {
     return;
   }
 
-  archiveState = "broadcast-called";
-  intro.classList.add("is-broadcast-called");
+  clearCallTimers();
+  stopCallAudio();
+  setCallState("call-dialing");
+  setBroadcastCallDisabled(true);
+
+  if (callMuteButton) {
+    callMuteButton.hidden = false;
+    callMuteButton.setAttribute("aria-pressed", String(isCallMuted));
+    callMuteButton.textContent = isCallMuted ? "UNMUTE" : "MUTE";
+    callMuteButton.setAttribute("aria-label", isCallMuted ? "Unmute call audio" : "Mute call audio");
+    window.requestAnimationFrame(() => callMuteButton.focus({ preventScroll: true }));
+  }
+
+  announceCallStatus("Calling archive subject 001, the girl.");
+  prepareCallAudio();
+  playRingCue();
+  scheduleCallStep(playRingCue, 850);
+  scheduleCallStep(playRingCue, 1700);
+
+  scheduleCallStep(() => {
+    setCallState("call-answered");
+    announceCallStatus("The girl answers: hello? Did they tell you I wished for everyone? I only—");
+  }, callDialingMs);
+
+  scheduleCallStep(() => {
+    if (archiveState === "call-answered") {
+      setCallAdvanceMode("to-recorded");
+      announceCallStatus("The girl stops. Click to continue.");
+    }
+  }, callDialingMs + callAnsweredReadMs);
+}
+
+function toggleCallMute() {
+  isCallMuted = !isCallMuted;
+
+  if (callAudioGain && callAudioContext) {
+    callAudioGain.gain.setValueAtTime(isCallMuted ? 0 : 1, callAudioContext.currentTime);
+  }
+
+  if (callMuteButton) {
+    callMuteButton.setAttribute("aria-pressed", String(isCallMuted));
+    callMuteButton.textContent = isCallMuted ? "UNMUTE" : "MUTE";
+    callMuteButton.setAttribute("aria-label", isCallMuted ? "Unmute call audio" : "Mute call audio");
+  }
 }
 
 function drawSignalTears() {
   ctx.save();
-  ctx.font = `${Math.max(6, cellY * 0.95)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  ctx.font = `${Math.max(6, cellY * 0.95)}px ${canvasFontFamily}`;
   ctx.textBaseline = "middle";
 
   for (let index = 0; index < 14; index += 1) {
@@ -746,7 +1138,7 @@ function drawReferenceStyleCaptionMarks() {
   ctx.save();
   ctx.globalAlpha = 0.14;
   ctx.fillStyle = "#c9c5bd";
-  ctx.font = `${Math.max(5, cellY * 0.68)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  ctx.font = `${Math.max(5, cellY * 0.68)}px ${canvasFontFamily}`;
   ctx.textBaseline = "middle";
 
   if (isWideDuo) {
@@ -862,5 +1254,27 @@ for (const button of doctrineCloserButtons) {
 }
 
 for (const button of broadcastCallButtons) {
-  button.addEventListener("click", callHerFromBroadcast);
+  button.addEventListener("click", startCallSequence);
 }
+
+if (callSequence) {
+  callSequence.addEventListener("click", continueCallSequence);
+  callSequence.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    continueCallSequence();
+  });
+}
+
+if (callAdvanceButton) {
+  callAdvanceButton.addEventListener("click", continueCallSequence);
+}
+
+if (callMuteButton) {
+  callMuteButton.addEventListener("click", toggleCallMute);
+}
+
+resetCallSequence();

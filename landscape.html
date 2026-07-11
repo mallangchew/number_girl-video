@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Love Cult Archive Intro - Landscape</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="styles.css?v=20260710call1">
+    <link rel="stylesheet" href="styles.css?v=20260711call3">
   </head>
   <body>
     <main class="archive-intro archive-intro--wide" data-layout="wide-duo" aria-label="Animated mirrored archive intro">
@@ -60,7 +60,7 @@
           <h1 class="doctrine-title">love: heaven or hell?</h1>
           <p class="doctrine-copy">
             <span>if you do not know,</span>
-            <button class="doctrine-closer" type="button" disabled>come closer.</button>
+            <span class="doctrine-closer doctrine-closer--static">come closer.</span>
           </p>
           <p class="doctrine-copy doctrine-copy--final">
             <span>if you know,</span>
@@ -88,6 +88,51 @@
           <div class="broadcast-call-layer">
             <button class="broadcast-call-target" type="button" aria-label="Call her"></button>
           </div>
+          <div class="call-sequence" aria-hidden="true">
+            <section class="call-sequence__layer call-sequence__layer--dialing" data-call-layer="call-dialing" aria-hidden="true">
+              <p class="call-sequence__signal">CALLING...</p>
+              <p class="call-sequence__record">ARCHIVE SUBJECT 001</p>
+              <p class="call-sequence__subject">THE GIRL</p>
+              <div class="call-sequence__rings" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+            </section>
+            <section class="call-sequence__layer call-sequence__layer--answered" data-call-layer="call-answered" aria-hidden="true">
+              <div class="call-dialogue" aria-label="The girl's interrupted response">
+                <p class="call-dialogue__line call-dialogue__line--1">hello?</p>
+                <p class="call-dialogue__line call-dialogue__line--2">...</p>
+                <p class="call-dialogue__line call-dialogue__line--3">did they tell you<br>i wished for everyone?</p>
+                <p class="call-dialogue__line call-dialogue__line--4">i only—</p>
+              </div>
+            </section>
+            <section class="call-sequence__layer call-sequence__layer--recorded" data-call-layer="caller-recorded" aria-hidden="true">
+              <p class="call-recorded__signal">SIGNAL LOST</p>
+              <p class="call-recorded__thanks">thank you for calling.<br>your interest in love<br>has been recorded.</p>
+              <dl class="call-recorded__status">
+                <div><dt>love status:</dt><dd>curious</dd></div>
+                <div><dt>faith level:</dt><dd>unconfirmed</dd></div>
+                <div><dt>contact attempts:</dt><dd>1</dd></div>
+              </dl>
+            </section>
+            <section class="call-sequence__layer call-sequence__layer--final" data-call-layer="love-broadcast" aria-hidden="true">
+              <img
+                class="call-final__banner"
+                src="assets/love-popup-80s-saranghaseyo-banner.png"
+                alt="사랑하세요~ 모두 사랑하세요~"
+                width="720"
+                height="144"
+              >
+            </section>
+            <section class="call-sequence__layer call-sequence__layer--news" data-call-layer="love-news" aria-hidden="true">
+              <img
+                class="call-news__image"
+                src="assets/love-world-news-host-v1.png"
+                alt="LOVE WORLD broadcast: 사랑 유행 확산, love charm report"
+                width="1456"
+                height="1064"
+              >
+            </section>
+          </div>
           <div class="broadcast-static" aria-hidden="true">
             <div class="broadcast-static__field"></div>
             <div class="broadcast-static__snow"></div>
@@ -96,12 +141,15 @@
           </div>
         </div>
         <button class="broadcast-subtitle-call" type="button" aria-label="Call her">- call her</button>
+        <button class="call-advance-outside" type="button" aria-label="Continue call sequence" hidden>click to continue</button>
+        <button class="call-mute" type="button" aria-label="Mute call audio" aria-pressed="false" hidden>MUTE</button>
         <nav class="doctrine-nav broadcast-nav" aria-label="Archive categories">
           <span class="doctrine-nav__item doctrine-nav__item--active">LOVE WORLD</span>
           <span class="doctrine-nav__item">SHOP</span>
           <span class="doctrine-nav__item">NOTICE</span>
-          <span class="doctrine-nav__item">MY ACCOUNT</span>
+          <span class="doctrine-nav__item broadcast-account">MY ACCOUNT<span class="broadcast-account__mark" aria-hidden="true"></span></span>
         </nav>
+        <p class="call-live-status visually-hidden" aria-live="polite" aria-atomic="true"></p>
       </section>
       <button class="archive-back" type="button" aria-label="Go back" disabled>&lt;</button>
       <div class="archive-blackout" aria-hidden="true"></div>
@@ -109,6 +157,6 @@
       <div class="paper-noise" aria-hidden="true"></div>
     </main>
     <script src="mask-data.js?v=20260709s"></script>
-    <script src="script.js?v=20260709tv4"></script>
+    <script src="script.js?v=20260711call3"></script>
   </body>
 </html>

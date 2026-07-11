@@ -1,7 +1,7 @@
 :root {
   color-scheme: dark;
   background: #000;
-  --archive-condensed: "Arial Narrow", "Helvetica Neue Condensed", "Roboto Condensed", Arial, sans-serif;
+  --archive-condensed: "Arial Narrow", Arial, sans-serif;
   --tv-screen-left: 27.03%;
   --tv-screen-top: 21.15%;
   --tv-screen-width: 45.39%;
@@ -9,6 +9,13 @@
   --tv-screen-center-x: 49.73%;
   --tv-screen-center-y: 49.89%;
   --broadcast-camera-enter-scale: 2.72;
+  --call-color-text: #f7f3ee;
+  --call-color-surface: rgb(0 0 0 / 92%);
+  --call-color-answered: rgb(29 5 43 / 96%);
+  --call-color-final: rgb(255 19 166 / 14%);
+  --call-color-focus: rgb(255 255 255 / 76%);
+  --call-space-frame: clamp(24px, 4.6vw, 72px);
+  --call-transition-state: opacity 180ms steps(2, end);
 }
 
 * {
@@ -30,7 +37,7 @@ body {
   place-items: center;
   min-height: 100vh;
   min-height: 100svh;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--archive-condensed);
 }
 
 .archive-intro {
@@ -47,7 +54,11 @@ body {
   height: min(100vh, calc(100vw * 9 / 16));
 }
 
-.archive-intro--wide.is-broadcast {
+.archive-intro--wide.is-broadcast,
+.archive-intro--wide.is-call-dialing,
+.archive-intro--wide.is-call-answered,
+.archive-intro--wide.is-caller-recorded,
+.archive-intro--wide.is-love-broadcast {
   overflow: visible;
 }
 
@@ -712,6 +723,12 @@ body {
   text-underline-offset: 0.14em;
 }
 
+.doctrine-closer--static {
+  cursor: default;
+  pointer-events: none;
+  text-decoration: none;
+}
+
 .doctrine-click-hint {
   position: static;
   display: block;
@@ -865,7 +882,7 @@ body {
 }
 
 .archive-intro.is-broadcast-entering .broadcast-ad {
-  animation: broadcastAdTuneIn 1300ms linear 5600ms forwards;
+  animation: broadcastAdTuneIn 2200ms cubic-bezier(0.22, 0.65, 0.22, 1) 5400ms forwards;
 }
 
 .archive-intro.is-broadcast .broadcast-ad {
@@ -920,11 +937,11 @@ body {
 }
 
 .archive-intro.is-broadcast-entering .broadcast-static {
-  animation: broadcastStaticTuneDown 1300ms linear 5600ms forwards;
+  animation: broadcastStaticTuneDown 2200ms cubic-bezier(0.22, 0.65, 0.22, 1) 5400ms forwards;
 }
 
 .archive-intro.is-broadcast .broadcast-static {
-  opacity: 0.42;
+  opacity: 0.22;
 }
 
 .broadcast-scene::before,
@@ -958,7 +975,7 @@ body {
 }
 
 .broadcast-static {
-  z-index: 5;
+  z-index: 3;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -1067,7 +1084,7 @@ body {
   appearance: none;
   background: transparent;
   cursor: pointer;
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
   transform: translateZ(0);
   user-select: none;
@@ -1078,7 +1095,7 @@ body {
 }
 
 .broadcast-call-target:focus-visible {
-  outline: 1px solid rgb(255 255 255 / 76%);
+  outline: 1px solid var(--call-color-focus);
   outline-offset: 3px;
 }
 
@@ -1115,7 +1132,7 @@ body {
 }
 
 .broadcast-subtitle-call:focus-visible {
-  outline: 1px solid rgb(255 255 255 / 76%);
+  outline: 1px solid var(--call-color-focus);
   outline-offset: 3px;
 }
 
@@ -1125,6 +1142,536 @@ body {
 
 .archive-intro.is-broadcast-called .broadcast-call-layer::after {
   animation: broadcastCallCut 760ms steps(2, end) both;
+}
+
+.call-sequence {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  color: var(--call-color-text);
+  font-family: var(--archive-condensed);
+  font-stretch: condensed;
+  mask-image: url("assets/love-tv-screen-mask.png?v=20260709smooth");
+  mask-mode: alpha;
+  mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  transition: var(--call-transition-state);
+  -webkit-mask-image: url("assets/love-tv-screen-mask.png?v=20260709smooth");
+  -webkit-mask-mode: alpha;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+}
+
+.archive-intro.is-call-dialing .call-sequence,
+.archive-intro.is-call-answered .call-sequence,
+.archive-intro.is-caller-recorded .call-sequence,
+.archive-intro.is-love-broadcast .call-sequence,
+.archive-intro.is-love-news .call-sequence {
+  opacity: 1;
+}
+
+.archive-intro.is-call-awaiting .call-sequence {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.call-sequence:focus-visible {
+  outline: 1px solid var(--call-color-focus);
+  outline-offset: -12px;
+}
+
+.call-sequence__layer {
+  position: absolute;
+  top: var(--tv-screen-top);
+  left: var(--tv-screen-left);
+  display: grid;
+  width: var(--tv-screen-width);
+  height: var(--tv-screen-height);
+  margin: 0;
+  place-content: center;
+  background: var(--call-color-surface);
+  opacity: 0;
+  overflow: hidden;
+  text-align: center;
+  transform: scale(1.014);
+  transition:
+    opacity 180ms steps(2, end),
+    filter 260ms ease,
+    transform 420ms cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.call-sequence__layer p,
+.call-sequence__layer dl,
+.call-sequence__layer dt,
+.call-sequence__layer dd {
+  margin: 0;
+  font-family: var(--archive-condensed);
+  font-stretch: condensed;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.archive-intro.is-call-dialing .call-sequence__layer--dialing,
+.archive-intro.is-call-answered .call-sequence__layer--answered,
+.archive-intro.is-caller-recorded .call-sequence__layer--recorded,
+.archive-intro.is-love-broadcast .call-sequence__layer--final,
+.archive-intro.is-love-news .call-sequence__layer--news {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.call-sequence__layer--dialing {
+  grid-template-rows: auto auto auto auto;
+  width: var(--tv-screen-width);
+  padding: clamp(20px, 4vw, 64px);
+  background:
+    radial-gradient(circle at 50% 48%, rgb(105 40 108 / 22%), transparent 34%),
+    rgb(3 2 8 / 97%);
+  filter: contrast(1.12);
+}
+
+.call-sequence__signal {
+  color: rgb(255 255 255 / 94%);
+  font-size: clamp(19px, 2.5vw, 38px);
+  line-height: 1;
+  text-shadow: 0 0 12px rgb(217 137 255 / 28%);
+}
+
+.call-sequence__record {
+  margin-top: clamp(18px, 3vw, 44px) !important;
+  color: rgb(232 218 232 / 58%);
+  font-size: clamp(9px, 1.05vw, 16px);
+  line-height: 1;
+}
+
+.call-sequence__subject {
+  margin-top: clamp(5px, 0.8vw, 12px) !important;
+  color: rgb(251 243 250 / 84%);
+  font-size: clamp(14px, 1.7vw, 26px);
+  line-height: 1;
+}
+
+.call-sequence__rings {
+  display: flex;
+  gap: clamp(8px, 1.2vw, 18px);
+  justify-content: center;
+  margin-top: clamp(26px, 4vw, 58px);
+}
+
+.call-sequence__rings span {
+  display: block;
+  width: clamp(5px, 0.55vw, 9px);
+  height: clamp(5px, 0.55vw, 9px);
+  border-radius: 50%;
+  background: rgb(242 223 242 / 26%);
+  box-shadow: 0 0 8px rgb(220 129 255 / 12%);
+  animation: callRingIndicator 2400ms steps(1, end) infinite;
+}
+
+.call-sequence__rings span:nth-child(2) {
+  animation-delay: 800ms;
+}
+
+.call-sequence__rings span:nth-child(3) {
+  animation-delay: 1600ms;
+}
+
+.call-sequence__layer--answered {
+  place-content: stretch;
+  background:
+    radial-gradient(circle at 50% 44%, rgb(105 29 123 / 35%), transparent 46%),
+    linear-gradient(180deg, var(--call-color-answered), rgb(8 1 18 / 99%));
+  color: rgb(249 235 248 / 88%);
+  filter: contrast(1.08) saturate(0.88);
+  text-align: left;
+}
+
+.call-sequence__layer--answered::before,
+.call-sequence__layer--answered::after,
+.call-sequence__layer--recorded::before,
+.call-sequence__layer--final::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.call-sequence__layer--answered::before {
+  background:
+    repeating-linear-gradient(180deg, rgb(255 255 255 / 6%) 0 1px, transparent 1px 5px),
+    linear-gradient(90deg, transparent, rgb(255 95 231 / 8%), transparent);
+  opacity: 0.42;
+}
+
+.call-sequence__layer--answered::after {
+  background: radial-gradient(circle at 50% 50%, transparent 0 38%, rgb(0 0 0 / 52%) 100%);
+}
+
+.call-dialogue {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  height: 100%;
+  padding: clamp(28px, 5.4vw, 82px) clamp(28px, 5vw, 76px);
+  align-content: center;
+  color: inherit;
+  font-size: clamp(14px, 2vw, 30px);
+  line-height: 1.08;
+  text-shadow: 0 0 8px rgb(255 153 240 / 22%);
+}
+
+.call-dialogue__line {
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+.archive-intro.is-call-answered .call-dialogue__line {
+  animation: callDialogueReveal 220ms steps(2, end) forwards;
+}
+
+.archive-intro.is-call-answered .call-dialogue__line--2 {
+  margin-top: clamp(14px, 2vw, 30px);
+  animation-delay: 1500ms;
+}
+
+.archive-intro.is-call-answered .call-dialogue__line--3 {
+  margin-top: clamp(20px, 3.2vw, 48px);
+  animation-delay: 3500ms;
+}
+
+.archive-intro.is-call-answered .call-dialogue__line--4 {
+  margin-top: clamp(18px, 2.6vw, 40px);
+  animation-delay: 7000ms;
+}
+
+.call-sequence__layer--recorded {
+  place-content: stretch;
+  padding: var(--call-space-frame);
+  background: rgb(0 0 0 / 99%);
+  color: rgb(240 236 229 / 84%);
+  text-align: left;
+}
+
+.call-sequence__layer--recorded::before {
+  background: repeating-linear-gradient(180deg, rgb(255 255 255 / 5%) 0 1px, transparent 1px 5px);
+  opacity: 0.28;
+}
+
+.call-recorded__signal,
+.call-recorded__thanks,
+.call-recorded__status {
+  position: relative;
+  z-index: 1;
+}
+
+.call-sequence__layer--recorded::before {
+  z-index: 2;
+}
+
+.call-recorded__signal,
+.call-recorded__thanks,
+.call-recorded__status {
+  z-index: 1;
+}
+
+.call-recorded__signal {
+  color: rgb(255 246 248 / 94%);
+  font-size: clamp(18px, 2.35vw, 36px);
+  line-height: 1;
+}
+
+.call-recorded__thanks {
+  margin-top: clamp(24px, 3.8vw, 58px) !important;
+  color: rgb(229 222 218 / 68%);
+  font-size: clamp(11px, 1.35vw, 20px);
+  line-height: 1.2;
+}
+
+.call-recorded__status {
+  display: grid;
+  gap: clamp(8px, 1.1vw, 16px);
+  margin-top: clamp(28px, 4.2vw, 64px) !important;
+  padding-top: clamp(24px, 3vw, 46px);
+  border-top: 1px solid rgb(248 239 236 / 18%);
+  font-size: clamp(9px, 1.1vw, 16px);
+  line-height: 1;
+}
+
+.call-recorded__status div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+}
+
+.call-recorded__status dd {
+  color: rgb(255 224 245 / 86%);
+}
+
+.call-sequence__layer--final {
+  grid-template-rows: 1fr;
+  place-content: stretch;
+  place-items: center;
+  background: var(--call-color-final);
+  color: #fff7fc;
+  filter: contrast(1.18) saturate(1.5) brightness(1.12);
+}
+
+.call-sequence__layer--final::after {
+  background:
+    radial-gradient(circle at 50% 52%, rgb(255 255 255 / 28%), transparent 30%),
+    linear-gradient(90deg, rgb(255 25 173 / 34%), transparent 36%, rgb(87 47 255 / 26%));
+  mix-blend-mode: screen;
+  opacity: 0.42;
+}
+
+.call-final__banner {
+  position: relative;
+  z-index: 0;
+}
+
+.call-final__banner {
+  display: block;
+  width: min(86%, 720px);
+  height: auto;
+  opacity: 0.9;
+  filter: blur(0.2px) contrast(1.14) saturate(1.02) brightness(1.04);
+  mix-blend-mode: screen;
+}
+
+.call-sequence__layer--news {
+  place-content: stretch;
+  place-items: stretch;
+  background: #05050a;
+  filter: contrast(1.04) saturate(0.92) brightness(0.92);
+}
+
+.call-news__image {
+  position: relative;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.92;
+  filter: blur(0.18px) contrast(0.96) saturate(0.9) brightness(0.92);
+}
+
+.call-sequence__layer--news::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  background:
+    repeating-linear-gradient(180deg, rgb(255 255 255 / 12%) 0 1px, transparent 1px 4px),
+    radial-gradient(circle at 50% 50%, transparent 0 46%, rgb(0 0 0 / 34%) 100%);
+  mix-blend-mode: screen;
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+.call-mute {
+  position: absolute;
+  right: clamp(16px, 3vw, 44px);
+  bottom: clamp(14px, 2.8vw, 42px);
+  z-index: 8;
+  padding: 6px 8px;
+  border: 1px solid rgb(255 244 250 / 32%);
+  appearance: none;
+  background: rgb(0 0 0 / 62%);
+  color: rgb(255 247 251 / 76%);
+  cursor: pointer;
+  font-family: var(--archive-condensed);
+  font-size: clamp(10px, 1vw, 14px);
+  font-stretch: condensed;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease,
+    transform 180ms ease;
+}
+
+.archive-intro.is-call-dialing .call-mute,
+.archive-intro.is-call-answered .call-mute,
+.archive-intro.is-caller-recorded .call-mute {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.call-mute:hover,
+.call-mute:focus-visible,
+.call-mute[aria-pressed="true"] {
+  color: #fff;
+  filter: brightness(1.3);
+  outline: 1px solid rgb(255 255 255 / 46%);
+  outline-offset: 3px;
+}
+
+.broadcast-account {
+  position: relative;
+}
+
+.broadcast-account__mark {
+  position: absolute;
+  top: -0.45em;
+  right: -0.75em;
+  width: 0.34em;
+  height: 0.34em;
+  border-radius: 50%;
+  background: rgb(255 141 212 / 92%);
+  box-shadow: 0 0 8px rgb(255 85 189 / 72%);
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.archive-intro.is-caller-recorded .broadcast-account__mark {
+  opacity: 1;
+  transform: scale(1);
+  animation: recordedAccountMark 680ms steps(2, end) infinite;
+}
+
+.archive-intro.is-call-dialing .broadcast-call-target,
+.archive-intro.is-call-answered .broadcast-call-target,
+.archive-intro.is-caller-recorded .broadcast-call-target,
+.archive-intro.is-call-dialing .broadcast-subtitle-call,
+.archive-intro.is-call-answered .broadcast-subtitle-call,
+.archive-intro.is-caller-recorded .broadcast-subtitle-call {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(5px);
+}
+
+.archive-intro.is-call-dialing .broadcast-ad,
+.archive-intro.is-call-answered .broadcast-ad,
+.archive-intro.is-caller-recorded .broadcast-ad {
+  filter: brightness(0.34) contrast(1.16) saturate(0.56);
+}
+
+.archive-intro.is-call-dialing .broadcast-static {
+  opacity: 0.58;
+  z-index: 5;
+}
+
+.archive-intro.is-call-answered .broadcast-static {
+  opacity: 0.1;
+  filter: hue-rotate(300deg) saturate(0.82) contrast(1.12);
+  z-index: 5;
+}
+
+.archive-intro.is-caller-recorded .broadcast-static {
+  opacity: 0.28;
+  filter: grayscale(1) contrast(1.4);
+  z-index: 5;
+}
+
+.archive-intro.is-call-static-cut .broadcast-static {
+  opacity: 1;
+  filter: grayscale(1) brightness(1.8) contrast(1.7);
+}
+
+.archive-intro.is-love-broadcast .broadcast-ad {
+  filter: brightness(1.16) contrast(1.22) saturate(1.5);
+}
+
+.archive-intro.is-love-broadcast .broadcast-static {
+  opacity: 0.48;
+  filter: hue-rotate(302deg) brightness(1.22) saturate(1.75) contrast(1.34);
+  z-index: 5;
+}
+
+.archive-intro.is-love-broadcast .broadcast-call-target,
+.archive-intro.is-love-broadcast .broadcast-subtitle-call {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.archive-intro.is-love-news .broadcast-ad,
+.archive-intro.is-love-news .broadcast-call-target,
+.archive-intro.is-love-news .broadcast-subtitle-call {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.archive-intro.is-love-news .broadcast-static {
+  opacity: 0.34;
+  filter: grayscale(0.45) brightness(1.1) contrast(1.28) saturate(0.9);
+  z-index: 5;
+}
+
+.archive-intro.is-broadcast-power-cut .call-sequence {
+  opacity: 0;
+}
+
+.archive-intro.is-broadcast-power-cut .broadcast-ad {
+  opacity: 0;
+}
+
+.archive-intro.is-broadcast-power-cut .broadcast-static {
+  opacity: 1;
+  filter: grayscale(1) brightness(0.18) contrast(2.2);
+  z-index: 7;
+  animation: broadcastPowerCut 620ms steps(2, end) both;
+}
+
+.archive-intro.is-broadcast-power-on .call-sequence {
+  animation: broadcastPowerOn 720ms steps(3, end) both;
+}
+
+.call-advance-outside {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(32px, 5.8vw, 78px);
+  z-index: 8;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  background: transparent;
+  color: rgb(244 239 231 / 58%);
+  cursor: pointer;
+  font-family: var(--archive-condensed);
+  font-size: clamp(13px, 1.45vw, 22px);
+  font-stretch: condensed;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1;
+  opacity: 0;
+  text-shadow: 0 0 10px rgb(255 176 225 / 12%);
+  transform: translateX(-50%) translateY(4px) scaleX(0.84);
+}
+
+.archive-intro.is-call-awaiting .call-advance-outside {
+  opacity: 1;
+  pointer-events: auto;
+  animation: callAdvanceHintIn 520ms steps(2, end) forwards;
+}
+
+.call-advance-outside:focus-visible {
+  color: #fff;
+  outline: 1px solid var(--call-color-focus);
+  outline-offset: 4px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  margin: -1px !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
 }
 
 .broadcast-nav {
@@ -1146,6 +1693,107 @@ body {
 
 .archive-intro.is-broadcast-entering .broadcast-nav {
   transition-delay: 2600ms;
+}
+
+@keyframes callRingIndicator {
+  0%,
+  32% {
+    opacity: 1;
+    filter: brightness(1.8);
+    transform: scale(1.35);
+  }
+
+  33%,
+  100% {
+    opacity: 0.26;
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes callDialogueReveal {
+  from {
+    opacity: 0;
+    filter: blur(1px);
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes callAdvanceHintIn {
+  from {
+    opacity: 0;
+    filter: blur(1px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes broadcastPowerCut {
+  0% {
+    opacity: 0.72;
+    filter: grayscale(1) brightness(1.8) contrast(2.4);
+  }
+
+  28% {
+    opacity: 1;
+    filter: grayscale(1) brightness(0.08) contrast(2.6);
+  }
+
+  100% {
+    opacity: 1;
+    filter: grayscale(1) brightness(0.02) contrast(2.8);
+  }
+}
+
+@keyframes broadcastPowerOn {
+  0% {
+    opacity: 0;
+    filter: brightness(2.3) contrast(2.1) saturate(0.2) blur(1.6px);
+  }
+
+  18% {
+    opacity: 1;
+    filter: brightness(1.7) contrast(1.8) saturate(0.55) blur(1px);
+  }
+
+  36% {
+    opacity: 0.32;
+  }
+
+  54% {
+    opacity: 1;
+    filter: brightness(1.18) contrast(1.22) saturate(0.8) blur(0.35px);
+  }
+
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+@keyframes recordedAccountMark {
+  0%,
+  48% {
+    opacity: 1;
+    filter: brightness(1.8);
+    transform: scale(1);
+  }
+
+  49%,
+  100% {
+    opacity: 0.18;
+    filter: brightness(1);
+    transform: scale(0.72);
+  }
 }
 
 @keyframes broadcastCameraPullback {
@@ -1175,33 +1823,32 @@ body {
 @keyframes broadcastAdTuneIn {
   0% {
     opacity: 0;
-    visibility: hidden;
-    filter: brightness(1.8) contrast(1.6) saturate(0.3) blur(2px);
-  }
-
-  12% {
-    opacity: 0.12;
     visibility: visible;
-    filter: brightness(1.55) contrast(1.5) saturate(0.66) blur(1.4px);
+    filter: brightness(1.85) contrast(1.5) saturate(0.25) blur(2.4px);
   }
 
-  25% {
-    opacity: 0;
-    visibility: hidden;
+  18% {
+    opacity: 0.16;
+    filter: brightness(1.65) contrast(1.42) saturate(0.52) blur(1.8px);
   }
 
-  45% {
-    opacity: 0.62;
-    visibility: visible;
-    filter: brightness(1.28) contrast(1.4) saturate(1.05) blur(0.7px);
+  34% {
+    opacity: 0.28;
+    filter: brightness(1.42) contrast(1.34) saturate(0.72) blur(1.2px);
   }
 
-  58% {
-    opacity: 0.24;
+  52% {
+    opacity: 0.52;
+    filter: brightness(1.28) contrast(1.28) saturate(0.92) blur(0.78px);
   }
 
-  76% {
-    opacity: 0.9;
+  72% {
+    opacity: 0.76;
+    filter: brightness(1.16) contrast(1.25) saturate(1.06) blur(0.48px);
+  }
+
+  88% {
+    opacity: 0.92;
   }
 
   100% {
@@ -1217,26 +1864,27 @@ body {
     filter: blur(0.2px) brightness(1) contrast(1.28) saturate(1.24);
   }
 
-  28% {
-    opacity: 0.78;
-    filter: blur(0.35px) brightness(1.45) contrast(1.45) saturate(0.9);
+  20% {
+    opacity: 0.88;
+    filter: blur(0.34px) brightness(1.38) contrast(1.42) saturate(0.9);
   }
 
   42% {
-    opacity: 1;
+    opacity: 0.72;
+    filter: blur(0.3px) brightness(1.28) contrast(1.34) saturate(0.98);
   }
 
-  62% {
-    opacity: 0.36;
-    filter: blur(0.25px) brightness(1.08) contrast(1.2) saturate(1.12);
+  64% {
+    opacity: 0.48;
+    filter: blur(0.25px) brightness(1.12) contrast(1.24) saturate(1.08);
   }
 
-  76% {
-    opacity: 0.62;
+  82% {
+    opacity: 0.32;
   }
 
   100% {
-    opacity: 0.42;
+    opacity: 0.22;
     filter: blur(0.2px) brightness(1.04) contrast(1.18) saturate(1.08);
   }
 }
@@ -1397,6 +2045,30 @@ body {
     font-size: clamp(9px, 2.8vw, 12px);
   }
 
+  .call-sequence__layer--recorded {
+    padding: clamp(10px, 3.2vw, 18px);
+  }
+
+  .call-recorded__signal {
+    font-size: clamp(15px, 4.6vw, 24px);
+  }
+
+  .call-recorded__thanks {
+    margin-top: clamp(8px, 2.8vw, 16px) !important;
+    font-size: clamp(8px, 2.5vw, 13px);
+    line-height: 1.1;
+  }
+
+  .call-recorded__status {
+    gap: clamp(3px, 1.1vw, 7px);
+    padding-top: clamp(7px, 2.2vw, 12px);
+    font-size: clamp(7px, 2.2vw, 11px);
+  }
+
+  .call-recorded__status div {
+    gap: 6px;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1421,6 +2093,12 @@ body {
     .broadcast-call-layer,
     .broadcast-call-target,
     .broadcast-subtitle-call,
+    .call-sequence,
+    .call-sequence__layer,
+    .call-dialogue__line,
+    .call-advance-outside,
+    .call-mute,
+    .broadcast-account__mark,
     .broadcast-nav,
     .doctrine-nav,
     .doctrine-panel,
@@ -1439,14 +2117,49 @@ body {
   .archive-intro.is-broadcast-entering .broadcast-static,
   .archive-intro.is-broadcast .broadcast-subtitle-call,
   .archive-intro.is-broadcast-called .broadcast-call-layer::after,
+  .call-sequence__rings span,
+  .archive-intro.is-call-answered .call-dialogue__line,
+  .archive-intro.is-call-awaiting .call-advance-outside,
+  .archive-intro.is-caller-recorded .broadcast-account__mark,
   .broadcast-static__field,
   .broadcast-static__snow,
   .broadcast-static__bar {
     animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+
+  .archive-intro.is-call-answered .call-dialogue__line {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  .archive-intro.is-call-awaiting .call-advance-outside {
+    opacity: 1;
+    filter: none;
+  }
+
+  .call-sequence__rings span,
+  .archive-intro.is-caller-recorded .broadcast-account__mark,
+  .broadcast-static__field,
+  .broadcast-static__snow,
+  .broadcast-static__bar {
+    animation: none;
   }
 
   .archive-intro.is-broadcast .broadcast-subtitle-call {
     opacity: 1;
+  }
+
+  .archive-intro.is-love-broadcast .broadcast-subtitle-call {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .archive-intro.is-call-dialing .broadcast-subtitle-call,
+  .archive-intro.is-call-answered .broadcast-subtitle-call,
+  .archive-intro.is-caller-recorded .broadcast-subtitle-call {
+    opacity: 0;
   }
 
   .archive-intro.is-prologue .prologue-copy:hover,
