@@ -10,6 +10,7 @@ const doctrineScene = document.querySelector(".doctrine-scene");
 const doctrineCloserButtons = document.querySelectorAll("button.doctrine-closer");
 const broadcastScene = document.querySelector(".broadcast-scene");
 const broadcastCamera = document.querySelector(".broadcast-camera");
+const broadcastAdImage = document.querySelector(".broadcast-ad__image");
 const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
 const callSequence = document.querySelector(".call-sequence");
 const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
@@ -53,6 +54,7 @@ const callAnsweredReadMs = 9600;
 const callRecordedLockMs = 900;
 let archiveState = "idle";
 let hasEnteredArchive = false;
+let broadcastAssetCheckCount = 0;
 let ritualStartedFrame = 0;
 let callAudioContext = null;
 let callAudioGain = null;
@@ -967,6 +969,7 @@ function enterBroadcast() {
 
   clearArchiveTimers();
   resetCallSequence();
+  broadcastAssetCheckCount = 0;
   archiveState = "broadcast-entering";
   pointer.active = false;
   intro.classList.remove("is-doctrine-hover", "is-doctrine-accepted", "is-broadcast", "is-broadcast-called");
@@ -984,6 +987,12 @@ function enterBroadcast() {
 
 function completeBroadcast() {
   if (archiveState !== "broadcast-entering") {
+    return;
+  }
+
+  if (broadcastAdImage && (!broadcastAdImage.complete || broadcastAdImage.naturalWidth === 0) && broadcastAssetCheckCount < 20) {
+    broadcastAssetCheckCount += 1;
+    scheduleArchiveStep(completeBroadcast, 120);
     return;
   }
 
