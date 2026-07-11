@@ -975,7 +975,7 @@ function enterBroadcast() {
   setDoctrineCloserDisabled(true);
   setBroadcastCallDisabled(true);
 
-  scheduleArchiveStep(completeBroadcast, 3000);
+  scheduleArchiveStep(completeBroadcast, 3600);
 }
 
 function completeBroadcast() {
@@ -1262,7 +1262,7 @@ for (const button of doctrineCloserButtons) {
 
 if (broadcastCamera) {
   broadcastCamera.addEventListener("animationend", (event) => {
-    if (event.animationName === "broadcastCameraPullback") {
+    if (event.animationName === "broadcastAdTuneIn") {
       completeBroadcast();
     }
   });
