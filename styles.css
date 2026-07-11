@@ -1581,6 +1581,23 @@ body {
   transform: scale(1.01);
 }
 
+.camcorder-frame__noise {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 3px, rgb(226 242 255 / 13%) 3px 4px, transparent 4px 9px),
+    linear-gradient(180deg, transparent 0 27%, rgb(194 221 255 / 12%) 28% 30%, transparent 31% 100%);
+  background-size: 100% 11px, 100% 100%;
+  mix-blend-mode: screen;
+  opacity: 0.18;
+}
+
+.archive-intro.is-trend-interviews .camcorder-frame__noise {
+  animation: interviewTapeNoise 180ms steps(2, end) infinite;
+}
+
 .camcorder-frame::before,
 .camcorder-frame::after {
   position: absolute;
@@ -1703,6 +1720,18 @@ body {
   0% { opacity: 0; transform: translateY(0); }
   45% { opacity: 0.5; transform: translateY(-1px); }
   100% { opacity: 0; transform: translateY(0); }
+}
+
+@keyframes interviewTapeNoise {
+  0% {
+    background-position: 0 0, 0 -2px;
+    opacity: 0.12;
+  }
+
+  100% {
+    background-position: 0 11px, 0 3px;
+    opacity: 0.26;
+  }
 }
 
 @keyframes interviewStare {
@@ -2420,6 +2449,7 @@ body {
   .archive-intro.is-broadcast-called .broadcast-call-layer::after,
   .archive-intro.is-trend-interviews .camcorder-frame,
   .archive-intro.is-trend-interviews .camcorder-frame::after,
+  .archive-intro.is-trend-interviews .camcorder-frame__noise,
   .archive-intro.is-trend-interviews .camcorder-frame__image--stare,
   .archive-intro.is-trend-interviews .camcorder-timecode,
   .archive-intro.is-trend-interviews .camcorder-caption,
