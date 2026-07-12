@@ -12,6 +12,7 @@ const broadcastScene = document.querySelector(".broadcast-scene");
 const broadcastCamera = document.querySelector(".broadcast-camera");
 const broadcastAdVideo = document.querySelector(".broadcast-ad__video");
 const broadcastAdAudio = document.querySelector(".broadcast-ad__audio");
+const newsVideo = document.querySelector(".call-news__video");
 const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
 const callSequence = document.querySelector(".call-sequence");
 const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
@@ -670,6 +671,7 @@ function resetCallSequence() {
   clearCallTimers();
   stopCallAudio();
   stopBroadcastAdMedia();
+  stopNewsVideo();
   setCallAdvanceMode(null);
   intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
   updateCallLayerAccessibility(null);
@@ -691,6 +693,28 @@ function stopBroadcastAdMedia() {
       media.currentTime = 0;
     } catch {}
   }
+}
+
+function stopNewsVideo() {
+  if (!newsVideo) {
+    return;
+  }
+
+  newsVideo.pause();
+  try {
+    newsVideo.currentTime = 0;
+  } catch {}
+}
+
+function playNewsVideo() {
+  if (!newsVideo) {
+    return;
+  }
+
+  try {
+    newsVideo.currentTime = 0;
+  } catch {}
+  newsVideo.play().catch(() => {});
 }
 
 function playBroadcastAdMedia() {
@@ -1075,6 +1099,7 @@ function showLoveNews() {
   scheduleCallStep(() => {
     setCallState("love-news");
     intro.classList.add("is-broadcast-power-on");
+    playNewsVideo();
     announceCallStatus("Love World news. Love trend spreads.");
   }, 620);
 
@@ -1086,7 +1111,7 @@ function showLoveNews() {
     if (archiveState === "love-news") {
       showTrendInterviews();
     }
-  }, 3600);
+  }, 15700);
 }
 
 function showTrendInterviews() {
