@@ -2071,8 +2071,14 @@ body {
 
 .archive-intro.is-love-weekly .call-sequence__layer--interview,
 .archive-intro.is-love-result .call-sequence__layer--interview {
-  opacity: 0 !important;
-  visibility: hidden;
+  display: none !important;
+}
+
+.archive-intro.is-love-weekly .call-sequence__layer--weekly,
+.archive-intro.is-love-result .call-sequence__layer--result {
+  z-index: 10;
+  opacity: 1;
+  visibility: visible;
 }
 
 .archive-intro.is-love-news .broadcast-static {
