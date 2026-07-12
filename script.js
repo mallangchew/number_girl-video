@@ -19,6 +19,7 @@ const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
 const callAdvanceButton = document.querySelector(".call-advance-outside");
 const callMuteButton = document.querySelector(".call-mute");
 const callLiveStatus = document.querySelector(".call-live-status");
+const loveWeeklyChoices = document.querySelectorAll("[data-love-type]");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const layout = intro?.dataset.layout || "portrait";
@@ -49,7 +50,7 @@ const maxFrameMs = 1000 / 24;
 const archiveTimers = [];
 const callTimers = [];
 const callAudioNodes = new Set();
-const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news", "is-trend-interviews"];
+const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news", "is-trend-interviews", "is-love-weekly", "is-love-result"];
 const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
@@ -971,7 +972,7 @@ function returnToDoctrineFromBroadcast() {
 }
 
 function goBack() {
-  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast", "love-news", "trend-interviews"].includes(archiveState)) {
+  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast", "love-news", "trend-interviews", "love-weekly", "love-result"].includes(archiveState)) {
     returnToOriginalBroadcast();
     return;
   }
@@ -1052,8 +1053,13 @@ function completeBroadcast() {
   archiveState = "broadcast";
   intro.classList.remove("is-broadcast-entering", "is-doctrine");
   intro.classList.add("is-broadcast");
-  setBroadcastCallDisabled(false);
+  setBroadcastCallDisabled(true);
   playBroadcastAdMedia();
+  scheduleArchiveStep(() => {
+    if (archiveState === "broadcast") {
+      setBroadcastCallDisabled(false);
+    }
+  }, 1300);
 
   if (doctrineScene) {
     doctrineScene.setAttribute("aria-hidden", "true");
@@ -1063,10 +1069,15 @@ function completeBroadcast() {
 function returnToOriginalBroadcast() {
   resetCallSequence();
   archiveState = "broadcast";
-  setBroadcastCallDisabled(false);
+  setBroadcastCallDisabled(true);
   intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-broadcast-power-cut", "is-broadcast-power-on");
   intro.classList.add("is-broadcast");
   playBroadcastAdMedia();
+  scheduleArchiveStep(() => {
+    if (archiveState === "broadcast") {
+      setBroadcastCallDisabled(false);
+    }
+  }, 1300);
   announceCallStatus("Call cancelled. Original broadcast restored.");
 }
 
@@ -1125,6 +1136,28 @@ function showTrendInterviews() {
       announceCallStatus("Love status unconfirmed.");
     }
   }, 6100);
+
+  scheduleCallStep(() => {
+    if (archiveState === "trend-interviews") {
+      showLoveWeekly();
+    }
+  }, 11800);
+}
+
+function showLoveWeekly() {
+  setCallAdvanceMode(null);
+  clearCallTimers();
+  setCallState("love-weekly");
+  announceCallStatus("Love World Weekly. Find out where you belong.");
+}
+
+function showLoveResult() {
+  if (archiveState !== "love-weekly") {
+    return;
+  }
+
+  setCallState("love-result");
+  announceCallStatus("Your love type is unconfirmed. No action is required.");
 }
 
 function showRecordedCallState() {
@@ -1358,7 +1391,14 @@ for (const button of broadcastCallButtons) {
 }
 
 if (callSequence) {
-  callSequence.addEventListener("click", continueCallSequence);
+  callSequence.addEventListener("click", () => {
+    if (archiveState === "love-weekly") {
+      showLoveResult();
+      return;
+    }
+
+    continueCallSequence();
+  });
   callSequence.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") {
       return;
@@ -1375,6 +1415,10 @@ if (callAdvanceButton) {
 
 if (callMuteButton) {
   callMuteButton.addEventListener("click", toggleCallMute);
+}
+
+for (const choice of loveWeeklyChoices) {
+  choice.addEventListener("click", showLoveResult);
 }
 
 resetCallSequence();
