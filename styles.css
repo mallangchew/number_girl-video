@@ -812,7 +812,9 @@ body {
 }
 
 .archive-intro.is-broadcast-entering .broadcast-scene,
-.archive-intro.is-broadcast .broadcast-scene {
+.archive-intro.is-broadcast .broadcast-scene,
+.archive-intro.is-love-weekly .broadcast-scene,
+.archive-intro.is-love-result .broadcast-scene {
   opacity: 1;
   pointer-events: auto;
   transform: scale(1);
@@ -834,7 +836,9 @@ body {
   animation: broadcastCameraPullback 3000ms cubic-bezier(0.76, 0, 0.24, 1) forwards;
 }
 
-.archive-intro.is-broadcast .broadcast-camera {
+.archive-intro.is-broadcast .broadcast-camera,
+.archive-intro.is-love-weekly .broadcast-camera,
+.archive-intro.is-love-result .broadcast-camera {
   opacity: 1;
   filter: none;
   transform: translate3d(0, 0, 0) scale(1);
@@ -1707,6 +1711,7 @@ body {
 
 .call-sequence__layer--weekly,
 .call-sequence__layer--result {
+  z-index: 4;
   place-content: stretch;
   place-items: stretch;
   background: #080715;
@@ -2062,6 +2067,12 @@ body {
   animation: none;
   opacity: 0;
   pointer-events: none;
+}
+
+.archive-intro.is-love-weekly .call-sequence__layer--interview,
+.archive-intro.is-love-result .call-sequence__layer--interview {
+  opacity: 0 !important;
+  visibility: hidden;
 }
 
 .archive-intro.is-love-news .broadcast-static {
