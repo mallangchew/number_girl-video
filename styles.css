@@ -1209,7 +1209,7 @@ body {
 
 .archive-intro.is-broadcast .broadcast-subtitle-call {
   pointer-events: auto;
-  animation: broadcastCallCaptionIn 680ms steps(2, end) 920ms both;
+  animation: broadcastCallCaptionIn 680ms steps(2, end) 1280ms both;
 }
 
 .broadcast-subtitle-call:focus-visible {
@@ -1252,8 +1252,14 @@ body {
 .archive-intro.is-caller-recorded .call-sequence,
 .archive-intro.is-love-broadcast .call-sequence,
 .archive-intro.is-love-news .call-sequence,
-.archive-intro.is-trend-interviews .call-sequence {
+.archive-intro.is-trend-interviews .call-sequence,
+.archive-intro.is-love-weekly .call-sequence,
+.archive-intro.is-love-result .call-sequence {
   opacity: 1;
+}
+
+.archive-intro.is-love-weekly .call-sequence {
+  pointer-events: auto;
 }
 
 .archive-intro.is-call-awaiting .call-sequence {
@@ -1302,7 +1308,9 @@ body {
 .archive-intro.is-caller-recorded .call-sequence__layer--recorded,
 .archive-intro.is-love-broadcast .call-sequence__layer--final,
 .archive-intro.is-love-news .call-sequence__layer--news,
-.archive-intro.is-trend-interviews .call-sequence__layer--interview {
+.archive-intro.is-trend-interviews .call-sequence__layer--interview,
+.archive-intro.is-love-weekly .call-sequence__layer--weekly,
+.archive-intro.is-love-result .call-sequence__layer--result {
   opacity: 1;
   transform: scale(1);
 }
@@ -1697,6 +1705,174 @@ body {
 .archive-intro.is-trend-interviews .camcorder-caption--final { animation: interviewFinalLine 280ms ease-out 8.76s forwards; }
 .archive-intro.is-trend-interviews .camcorder-status { animation: interviewFinalLine 280ms ease-out 9.26s forwards; }
 
+.call-sequence__layer--weekly,
+.call-sequence__layer--result {
+  place-content: stretch;
+  place-items: stretch;
+  background: #080715;
+  filter: contrast(1.04) saturate(0.92) brightness(0.94);
+}
+
+.love-weekly__image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(0.14px) contrast(0.95) saturate(0.9) brightness(0.94);
+}
+
+.love-weekly__heading,
+.love-weekly__choices,
+.love-result__copy,
+.love-result__notice {
+  position: absolute;
+  z-index: 2;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgb(35 27 70 / 78%), -1px 0 0 rgb(255 135 197 / 42%);
+}
+
+.love-weekly__heading {
+  inset: 0;
+  pointer-events: none;
+  color: rgb(255 243 251 / 92%);
+}
+
+.love-weekly__heading p,
+.love-weekly__heading h2,
+.love-result__copy p,
+.love-result__copy h2,
+.love-result__copy small,
+.love-result__notice {
+  margin: 0;
+}
+
+.love-weekly__heading p,
+.love-result__kicker {
+  color: rgb(224 255 244 / 82%);
+  font-size: clamp(8px, 1.08vw, 15px);
+  letter-spacing: 0.12em;
+}
+
+.love-weekly__heading p {
+  position: absolute;
+  top: 8.5%;
+  left: 10%;
+  color: rgb(224 255 244 / 76%);
+  font-size: clamp(7px, 0.84vw, 12px);
+  text-align: left;
+}
+
+.love-weekly__heading h2 {
+  position: absolute;
+  top: 20.5%;
+  right: 14%;
+  left: 14%;
+  font-size: clamp(14px, 1.7vw, 25px);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.love-weekly__choices {
+  inset: 0;
+  z-index: 4;
+  display: block;
+}
+
+.love-weekly__choices button {
+  position: absolute;
+  right: 21%;
+  left: 21%;
+  width: 58%;
+  height: 10.2%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  appearance: none;
+  background: transparent;
+  color: rgb(95 29 93 / 88%);
+  cursor: pointer;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  font-size: clamp(10px, 1.45vw, 21px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 1px 0 0 rgb(255 255 255 / 54%);
+  text-transform: uppercase;
+  transition: color 160ms ease, filter 160ms ease, transform 160ms ease;
+}
+
+.love-weekly__choices button:nth-child(1) { top: 44.2%; }
+.love-weekly__choices button:nth-child(2) { top: 55.5%; }
+.love-weekly__choices button:nth-child(3) { top: 66.8%; }
+
+.love-weekly__choices button:hover,
+.love-weekly__choices button:focus-visible {
+  color: rgb(255 255 255 / 96%);
+  filter: drop-shadow(0 0 8px rgb(255 235 255 / 72%));
+  outline: 0;
+  transform: scale(1.025);
+}
+
+.love-result__copy {
+  top: 29%;
+  right: 20%;
+  left: 20%;
+  height: 57%;
+  color: rgb(122 45 111 / 92%);
+}
+
+.love-result__copy h2 {
+  margin-top: clamp(38px, 4.5vw, 58px);
+  font-size: clamp(19px, 2.75vw, 40px);
+  letter-spacing: 0.03em;
+}
+
+.love-result__copy > p:not(.love-result__kicker) {
+  margin-top: clamp(22px, 3vw, 38px);
+  font-size: clamp(11px, 1.45vw, 21px);
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+}
+
+.love-result__copy small {
+  position: absolute;
+  right: 0;
+  bottom: 12%;
+  left: 0;
+  display: block;
+  margin: 0;
+  color: rgb(130 73 130 / 68%);
+  font-size: clamp(7px, 0.9vw, 13px);
+  letter-spacing: 0.1em;
+}
+
+.love-result__notice {
+  right: 8%;
+  bottom: 4.8%;
+  left: 8%;
+  color: rgb(58 20 93 / 96%);
+  font-size: clamp(8px, 1vw, 15px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 rgb(255 228 246 / 56%);
+  transform: translateY(clamp(4px, 0.72vw, 10px));
+}
+
+.call-sequence__layer .love-weekly__heading p,
+.call-sequence__layer .love-result__copy p,
+.call-sequence__layer .love-result__notice {
+  font-family: "Arial Narrow", Arial, sans-serif;
+}
+
+.call-sequence__layer .love-result__notice {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 @keyframes interviewFrameJolt {
   0%, 100% { transform: translate3d(0, 0, 0); }
   34% { transform: translate3d(-0.16%, 0.08%, 0); }
@@ -1877,6 +2053,17 @@ body {
   pointer-events: none;
 }
 
+.archive-intro.is-love-weekly .broadcast-ad,
+.archive-intro.is-love-weekly .broadcast-call-target,
+.archive-intro.is-love-weekly .broadcast-subtitle-call,
+.archive-intro.is-love-result .broadcast-ad,
+.archive-intro.is-love-result .broadcast-call-target,
+.archive-intro.is-love-result .broadcast-subtitle-call {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .archive-intro.is-love-news .broadcast-static {
   opacity: 0.34;
   filter: grayscale(0.45) brightness(1.1) contrast(1.28) saturate(0.9);
@@ -1885,6 +2072,13 @@ body {
 
 .archive-intro.is-trend-interviews .broadcast-static {
   opacity: 0;
+}
+
+.archive-intro.is-love-weekly .broadcast-static,
+.archive-intro.is-love-result .broadcast-static {
+  z-index: 5;
+  opacity: 0.2;
+  filter: blur(0.16px) brightness(0.94) contrast(1.12) saturate(0.92);
 }
 
 .archive-intro.is-broadcast-power-cut .call-sequence {
