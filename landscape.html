@@ -8,7 +8,7 @@
     <link rel="preload" as="video" href="assets/%E1%84%80%E1%85%AA%E1%86%BC%E1%84%80%E1%85%A9%E1%84%8B%E1%85%A7%E1%86%BC%E1%84%89%E1%85%A1%E1%86%BC.mp4" type="video/mp4">
     <link rel="preload" as="audio" href="assets/%E1%84%80%E1%85%AA%E1%86%BC%E1%84%80%E1%85%A9%E1%84%8B%E1%85%A7%E1%86%BC%E1%84%89%E1%85%A1%E1%86%BC%20%E1%84%89%E1%85%A9%E1%84%85%E1%85%B5%E1%84%86%E1%85%A1%E1%86%AB.mp4" type="video/mp4">
     <link rel="preload" as="video" href="assets/%E1%84%82%E1%85%B2%E1%84%89%E1%85%B3.mp4" type="video/mp4">
-    <link rel="stylesheet" href="styles.css?v=20260713news1">
+    <link rel="stylesheet" href="styles.css?v=20260713weekly9">
   </head>
   <body>
     <main class="archive-intro archive-intro--wide" data-layout="wide-duo" aria-label="Animated mirrored archive intro">
@@ -89,6 +89,7 @@
               class="broadcast-ad__video"
               src="assets/%E1%84%80%E1%85%AA%E1%86%BC%E1%84%80%E1%85%A9%E1%84%8B%E1%85%A7%E1%86%BC%E1%84%89%E1%85%A1%E1%86%BC.mp4"
               muted
+              loop
               playsinline
               preload="auto"
               aria-hidden="true"
@@ -96,6 +97,7 @@
             <audio
               class="broadcast-ad__audio"
               src="assets/%E1%84%80%E1%85%AA%E1%86%BC%E1%84%80%E1%85%A9%E1%84%8B%E1%85%A7%E1%86%BC%E1%84%89%E1%85%A1%E1%86%BC%20%E1%84%89%E1%85%A9%E1%84%85%E1%85%B5%E1%84%86%E1%85%A1%E1%86%AB.mp4"
+              loop
               preload="auto"
               aria-hidden="true"
             ></audio>
@@ -173,6 +175,39 @@
                 <p class="camcorder-status">LOVE STATUS: UNCONFIRMED</p>
               </div>
             </section>
+            <section class="call-sequence__layer call-sequence__layer--weekly" data-call-layer="love-weekly" aria-hidden="true">
+              <img
+                class="love-weekly__image"
+                src="assets/%EC%83%9D%EC%84%B1%EB%90%9C%20%EC%9D%B4%EB%AF%B8%EC%A7%80%201.png"
+                alt="LOVE WORLD WEEKLY 사랑 유형 퀴즈"
+                width="1448"
+                height="1086"
+              >
+              <div class="love-weekly__heading">
+                <p>LOVE WORLD WEEKLY</p>
+                <h2>WHAT'S YOUR LOVE TYPE?</h2>
+              </div>
+              <div class="love-weekly__choices" aria-label="Choose your love type">
+                <button type="button" data-love-type="always">always in love</button>
+                <button type="button" data-love-type="almost">almost in love</button>
+                <button type="button" data-love-type="unknown">i don't know yet</button>
+              </div>
+            </section>
+            <section class="call-sequence__layer call-sequence__layer--result" data-call-layer="love-result" aria-hidden="true">
+              <img
+                class="love-weekly__image"
+                src="assets/%EC%83%9D%EC%84%B1%EB%90%9C%20%EC%9D%B4%EB%AF%B8%EC%A7%80%201%20(1).png"
+                alt="LOVE WORLD WEEKLY 사랑 유형 결과"
+                width="1448"
+                height="1086"
+              >
+              <div class="love-result__copy">
+                <h2>type: unconfirmed</h2>
+                <p>DON'T WORRY.<br>EVERYONE STARTS SOMEWHERE.</p>
+                <small>NO ACTION IS REQUIRED.</small>
+              </div>
+              <p class="love-result__notice">YOU MAY NOTICE A DIFFERENCE SOON.</p>
+            </section>
           </div>
           <div class="broadcast-static" aria-hidden="true">
             <div class="broadcast-static__field"></div>
@@ -198,6 +233,6 @@
       <div class="paper-noise" aria-hidden="true"></div>
     </main>
     <script src="mask-data.js?v=20260709s"></script>
-  <script src="script.js?v=20260713news1"></script>
+  <script src="script.js?v=20260713weekly9"></script>
   </body>
 </html>
