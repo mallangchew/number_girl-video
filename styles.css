@@ -1532,7 +1532,7 @@ body {
   filter: contrast(1.04) saturate(0.92) brightness(0.92);
 }
 
-.call-news__image {
+.call-news__video {
   position: relative;
   z-index: 0;
   display: block;
