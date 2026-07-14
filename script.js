@@ -60,6 +60,7 @@ const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
 const callRecordedLockMs = 900;
+const roomRingIntervals = [3300, 5200, 4100, 6800];
 let archiveState = "idle";
 let hasEnteredArchive = false;
 let ritualStartedFrame = 0;
@@ -67,6 +68,7 @@ let callAudioContext = null;
 let callAudioGain = null;
 let isCallMuted = false;
 let callAdvanceMode = null;
+let roomRingCount = 0;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
@@ -661,6 +663,36 @@ function playRoomTelephoneRing() {
   } catch {}
 }
 
+function resetRoomTelephoneSequence() {
+  roomRingCount = 0;
+  intro.classList.remove("is-room-phone-question");
+}
+
+function scheduleRoomTelephoneRing(delay) {
+  scheduleCallStep(() => {
+    if (archiveState !== "trend-room") {
+      return;
+    }
+
+    playRoomTelephoneRing();
+    roomRingCount += 1;
+
+    if (roomRingCount === 1) {
+      announceCallStatus("The billboard illuminates the room. The telephone rings.");
+    } else if (roomRingCount === 2) {
+      intro.classList.add("is-room-phone-question");
+      announceCallStatus("What's with that phone?");
+
+      scheduleCallStep(() => {
+        intro.classList.remove("is-room-phone-question");
+      }, prefersReducedMotion.matches ? 80 : 2400);
+    }
+
+    const nextDelay = roomRingIntervals[(roomRingCount - 1) % roomRingIntervals.length];
+    scheduleRoomTelephoneRing(nextDelay);
+  }, delay);
+}
+
 function playStaticCut() {
   intro.classList.add("is-call-static-cut");
   scheduleCallStep(() => intro.classList.remove("is-call-static-cut"), 180);
@@ -759,6 +791,7 @@ function playNewsPowerAudio() {
 function resetCallSequence() {
   clearCallTimers();
   stopCallAudio();
+  resetRoomTelephoneSequence();
   stopBroadcastAdMedia();
   stopNewsVideo();
   setCallAdvanceMode(null);
@@ -1271,6 +1304,7 @@ function startRoomReveal() {
 
   clearCallTimers();
   stopCallAudio();
+  resetRoomTelephoneSequence();
   stopBroadcastAdMedia();
   stopNewsVideo();
   setBroadcastCallDisabled(true);
@@ -1299,14 +1333,7 @@ function startRoomReveal() {
 
       announceCallStatus("The room is adjusting to the remaining signal.");
 
-      scheduleCallStep(() => {
-        if (archiveState !== "trend-room") {
-          return;
-        }
-
-        playRoomTelephoneRing();
-        announceCallStatus("The billboard illuminates the room. The telephone rings.");
-      }, prefersReducedMotion.matches ? 100 : 1050);
+      scheduleRoomTelephoneRing(prefersReducedMotion.matches ? 100 : 900);
 
       scheduleCallStep(() => {
         if (archiveState !== "trend-room") {
@@ -1318,8 +1345,8 @@ function startRoomReveal() {
         }
 
         announceCallStatus("Look outside.");
-      }, prefersReducedMotion.matches ? 240 : 2420);
-    }, prefersReducedMotion.matches ? 80 : 3100);
+      }, prefersReducedMotion.matches ? 3600 : 5900);
+    }, prefersReducedMotion.matches ? 80 : 3900);
   }, prefersReducedMotion.matches ? 40 : 760);
 }
 
@@ -1329,6 +1356,8 @@ function startCityTransition() {
   }
 
   clearCallTimers();
+  stopCallAudio();
+  resetRoomTelephoneSequence();
   setStoryState("city-entering");
   announceCallStatus("The billboard flashes. Love World spreads into the city.");
 
@@ -1345,13 +1374,16 @@ function startCityTransition() {
 function returnToTrendRoom() {
   clearCallTimers();
   stopCallAudio();
+  resetRoomTelephoneSequence();
   setStoryState("trend-room");
+  scheduleRoomTelephoneRing(prefersReducedMotion.matches ? 100 : 900);
   announceCallStatus("Observation may continue through the window.");
 }
 
 function returnToLoveResult() {
   clearCallTimers();
   stopCallAudio();
+  resetRoomTelephoneSequence();
   setCallState("love-result");
   if (callSequence) {
     callSequence.tabIndex = 0;
