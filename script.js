@@ -665,7 +665,7 @@ function playRoomTelephoneRing() {
 
 function resetRoomTelephoneSequence() {
   roomRingCount = 0;
-  intro.classList.remove("is-room-phone-question");
+  intro.classList.remove("is-room-phone-question", "is-room-phone-entering", "is-room-phone-pulse");
 }
 
 function scheduleRoomTelephoneRing(delay) {
@@ -680,12 +680,12 @@ function scheduleRoomTelephoneRing(delay) {
     if (roomRingCount === 1) {
       announceCallStatus("The billboard illuminates the room. The telephone rings.");
     } else if (roomRingCount === 2) {
-      intro.classList.add("is-room-phone-question");
+      intro.classList.add("is-room-phone-question", "is-room-phone-entering");
       announceCallStatus("What's with that phone?");
-
-      scheduleCallStep(() => {
-        intro.classList.remove("is-room-phone-question");
-      }, prefersReducedMotion.matches ? 80 : 2400);
+    } else {
+      intro.classList.remove("is-room-phone-pulse");
+      void intro.offsetWidth;
+      intro.classList.add("is-room-phone-pulse");
     }
 
     const nextDelay = roomRingIntervals[(roomRingCount - 1) % roomRingIntervals.length];
@@ -1344,7 +1344,7 @@ function startRoomReveal() {
           roomAdvanceButton.disabled = false;
         }
 
-        announceCallStatus("Look outside.");
+        announceCallStatus("The room remains under observation.");
       }, prefersReducedMotion.matches ? 3600 : 5900);
     }, prefersReducedMotion.matches ? 80 : 3900);
   }, prefersReducedMotion.matches ? 40 : 760);

@@ -2336,28 +2336,6 @@ body {
   outline-offset: -14px;
 }
 
-.story-scene__hint {
-  position: absolute;
-  bottom: clamp(30px, 7.2%, 70px);
-  left: 50%;
-  z-index: 6;
-  margin: 0;
-  color: rgb(242 237 231 / 48%);
-  font-family: var(--archive-condensed);
-  font-size: clamp(11px, 1.08vw, 16px);
-  font-stretch: condensed;
-  font-weight: 400;
-  letter-spacing: 0.035em;
-  line-height: 1;
-  opacity: 0;
-  pointer-events: none;
-  text-shadow:
-    0 1px 2px rgb(0 0 0 / 96%),
-    0 0 12px rgb(255 176 225 / 8%);
-  transform: translateX(-50%) scaleX(0.92);
-  white-space: nowrap;
-}
-
 .story-scene__phone-subtitle {
   position: absolute;
   bottom: clamp(28px, 5.8%, 58px);
@@ -2484,12 +2462,16 @@ body {
   transform: scale(1);
 }
 
-.archive-intro.is-trend-room .story-scene__hint {
-  animation: storyHintIn 1400ms steps(3, end) 7200ms both;
+.archive-intro.is-room-phone-question .story-scene__phone-subtitle {
+  opacity: 0.62;
 }
 
-.archive-intro.is-room-phone-question .story-scene__phone-subtitle {
-  animation: storyPhoneSubtitle 2400ms steps(3, end) both;
+.archive-intro.is-room-phone-question.is-room-phone-entering .story-scene__phone-subtitle {
+  animation: storyPhoneSubtitle 1900ms steps(3, end) both;
+}
+
+.archive-intro.is-room-phone-question.is-room-phone-pulse .story-scene__phone-subtitle {
+  animation: storyPhoneSubtitlePulse 1500ms steps(3, end) both;
 }
 
 .archive-intro.is-trend-room .story-scene__billboard-flash {
@@ -2644,9 +2626,15 @@ body {
 
 @keyframes storyPhoneSubtitle {
   0%, 8% { opacity: 0; filter: blur(1px); }
-  14%, 76% { opacity: 1; filter: blur(0); }
-  84% { opacity: 0.32; }
-  100% { opacity: 0; filter: blur(0.6px); }
+  14%, 54% { opacity: 1; filter: blur(0); }
+  76% { opacity: 0.72; }
+  100% { opacity: 0.62; filter: blur(0); }
+}
+
+@keyframes storyPhoneSubtitlePulse {
+  0% { opacity: 0.62; filter: blur(0); }
+  16%, 58% { opacity: 0.96; filter: blur(0); }
+  100% { opacity: 0.62; filter: blur(0); }
 }
 
 @keyframes storyRoomBillboardAwaken {
@@ -2665,13 +2653,6 @@ body {
   45% { opacity: 0.9; }
   72% { opacity: 0.36; }
   100% { opacity: 0; }
-}
-
-@keyframes storyHintIn {
-  0%, 38% { opacity: 0; filter: blur(1px); }
-  46% { opacity: 0.18; }
-  54% { opacity: 0; }
-  68%, 100% { opacity: 1; filter: blur(0); }
 }
 
 @keyframes storyBillboardFlash {
@@ -3164,7 +3145,6 @@ body {
     .doctrine-click-hint,
     .story-scene,
     .story-scene__image,
-    .story-scene__hint,
     .story-scene__phone-subtitle {
     transition-duration: 1ms;
     transition-delay: 0ms;
@@ -3197,11 +3177,11 @@ body {
   .story-camcorder__noise,
   .story-camcorder__bar,
   .archive-intro.is-trend-room .story-camcorder::after,
-  .archive-intro.is-room-phone-question .story-scene__phone-subtitle,
+  .archive-intro.is-room-phone-question.is-room-phone-entering .story-scene__phone-subtitle,
+  .archive-intro.is-room-phone-question.is-room-phone-pulse .story-scene__phone-subtitle,
   .archive-intro.is-tv-powering-off .call-sequence,
   .archive-intro.is-tv-powering-off .broadcast-static,
-  .archive-intro.is-tv-powering-off .broadcast-camera::after,
-  .archive-intro.is-trend-room .story-scene__hint {
+  .archive-intro.is-tv-powering-off .broadcast-camera::after {
     animation-duration: 1ms;
     animation-delay: 0ms;
   }
@@ -3226,11 +3206,6 @@ body {
   .archive-intro.is-trend-room .story-scene--room,
   .archive-intro.is-trend-city .story-scene--city {
     animation: none;
-  }
-
-  .archive-intro.is-trend-room .story-scene__hint {
-    opacity: 1;
-    filter: none;
   }
 
   .archive-intro.is-call-answered .call-dialogue__line {
