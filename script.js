@@ -606,6 +606,61 @@ function playRingCue() {
   } catch {}
 }
 
+function playRoomTelephoneRing() {
+  if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
+    return;
+  }
+
+  try {
+    const now = callAudioContext.currentTime;
+    const bellGain = callAudioContext.createGain();
+    const bellFilter = callAudioContext.createBiquadFilter();
+    const bellPanner = typeof callAudioContext.createStereoPanner === "function"
+      ? callAudioContext.createStereoPanner()
+      : null;
+    const lowerBell = callAudioContext.createOscillator();
+    const upperBell = callAudioContext.createOscillator();
+    const strikes = [0, 0.3, 0.82, 1.12];
+
+    lowerBell.type = "square";
+    lowerBell.frequency.value = 510;
+    lowerBell.detune.value = -7;
+    upperBell.type = "sine";
+    upperBell.frequency.value = 690;
+    upperBell.detune.value = 9;
+    bellFilter.type = "bandpass";
+    bellFilter.frequency.value = 760;
+    bellFilter.Q.value = 1.25;
+    if (bellPanner) {
+      bellPanner.pan.value = -0.72;
+    }
+    bellGain.gain.setValueAtTime(0.0001, now);
+
+    for (const offset of strikes) {
+      bellGain.gain.setValueAtTime(0.0001, now + offset);
+      bellGain.gain.exponentialRampToValueAtTime(0.068, now + offset + 0.012);
+      bellGain.gain.setValueAtTime(0.052, now + offset + 0.09);
+      bellGain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.28);
+    }
+
+    lowerBell.connect(bellFilter);
+    upperBell.connect(bellFilter);
+    bellFilter.connect(bellGain);
+    if (bellPanner) {
+      bellGain.connect(bellPanner);
+      bellPanner.connect(callAudioGain);
+    } else {
+      bellGain.connect(callAudioGain);
+    }
+    lowerBell.start(now);
+    upperBell.start(now);
+    lowerBell.stop(now + 1.48);
+    upperBell.stop(now + 1.48);
+    trackCallAudioNode(lowerBell);
+    trackCallAudioNode(upperBell);
+  } catch {}
+}
+
 function playStaticCut() {
   intro.classList.add("is-call-static-cut");
   scheduleCallStep(() => intro.classList.remove("is-call-static-cut"), 180);
@@ -1237,8 +1292,34 @@ function startRoomReveal() {
       }
 
       setStoryState("trend-room");
-      announceCallStatus("Observation may continue through the window.");
-    }, prefersReducedMotion.matches ? 80 : 2380);
+
+      if (roomAdvanceButton) {
+        roomAdvanceButton.disabled = true;
+      }
+
+      announceCallStatus("The room is adjusting to the remaining signal.");
+
+      scheduleCallStep(() => {
+        if (archiveState !== "trend-room") {
+          return;
+        }
+
+        playRoomTelephoneRing();
+        announceCallStatus("The billboard illuminates the room. The telephone rings.");
+      }, prefersReducedMotion.matches ? 100 : 1050);
+
+      scheduleCallStep(() => {
+        if (archiveState !== "trend-room") {
+          return;
+        }
+
+        if (roomAdvanceButton) {
+          roomAdvanceButton.disabled = false;
+        }
+
+        announceCallStatus("Look outside.");
+      }, prefersReducedMotion.matches ? 240 : 2420);
+    }, prefersReducedMotion.matches ? 80 : 3100);
   }, prefersReducedMotion.matches ? 40 : 760);
 }
 
