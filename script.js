@@ -55,7 +55,7 @@ const archiveTimers = [];
 const callTimers = [];
 const callAudioNodes = new Set();
 const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news", "is-trend-interviews", "is-love-weekly", "is-love-result"];
-const storyStateClasses = ["is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city"];
+const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city"];
 const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
@@ -1020,7 +1020,7 @@ function goBack() {
     return;
   }
 
-  if (archiveState === "trend-room" || archiveState === "room-revealing") {
+  if (archiveState === "trend-room" || archiveState === "room-revealing" || archiveState === "tv-powering-off") {
     returnToLoveResult();
     return;
   }
@@ -1219,18 +1219,27 @@ function startRoomReveal() {
   stopBroadcastAdMedia();
   stopNewsVideo();
   setBroadcastCallDisabled(true);
-  setStoryState("room-revealing");
+  setStoryState("tv-powering-off");
   playNewsPowerAudio();
-  announceCallStatus("The television powers off. Love World is already in the room.");
+  announceCallStatus("The television signal is powering off.");
 
   scheduleCallStep(() => {
-    if (archiveState !== "room-revealing") {
+    if (archiveState !== "tv-powering-off") {
       return;
     }
 
-    setStoryState("trend-room");
-    announceCallStatus("The room is visible. Continue through the window.");
-  }, prefersReducedMotion.matches ? 40 : 2180);
+    setStoryState("room-revealing");
+    announceCallStatus("The television is off. Love World is already in the room.");
+
+    scheduleCallStep(() => {
+      if (archiveState !== "room-revealing") {
+        return;
+      }
+
+      setStoryState("trend-room");
+      announceCallStatus("Observation may continue through the window.");
+    }, prefersReducedMotion.matches ? 80 : 2380);
+  }, prefersReducedMotion.matches ? 40 : 760);
 }
 
 function startCityTransition() {
@@ -1249,14 +1258,14 @@ function startCityTransition() {
 
     setStoryState("trend-city");
     announceCallStatus("Love World trend archive. City spread observed.");
-  }, prefersReducedMotion.matches ? 60 : 1700);
+  }, prefersReducedMotion.matches ? 60 : 2200);
 }
 
 function returnToTrendRoom() {
   clearCallTimers();
   stopCallAudio();
   setStoryState("trend-room");
-  announceCallStatus("The room is visible. Continue through the window.");
+  announceCallStatus("Observation may continue through the window.");
 }
 
 function returnToLoveResult() {

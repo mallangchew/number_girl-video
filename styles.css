@@ -870,6 +870,16 @@ body {
   will-change: opacity, filter, transform;
 }
 
+.broadcast-camera::after {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  background: #000;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
 .archive-intro.is-broadcast-entering .broadcast-camera {
   opacity: 1;
   animation: broadcastCameraPullback 3000ms cubic-bezier(0.76, 0, 0.24, 1) forwards;
@@ -1311,7 +1321,8 @@ body {
 .archive-intro.is-love-news .call-sequence,
 .archive-intro.is-trend-interviews .call-sequence,
 .archive-intro.is-love-weekly .call-sequence,
-.archive-intro.is-love-result .call-sequence {
+.archive-intro.is-love-result .call-sequence,
+.archive-intro.is-tv-powering-off .call-sequence {
   opacity: 1;
 }
 
@@ -1372,7 +1383,8 @@ body {
 .archive-intro.is-love-news .call-sequence__layer--news,
 .archive-intro.is-trend-interviews .call-sequence__layer--interview,
 .archive-intro.is-love-weekly .call-sequence__layer--weekly,
-.archive-intro.is-love-result .call-sequence__layer--result {
+.archive-intro.is-love-result .call-sequence__layer--result,
+.archive-intro.is-tv-powering-off .call-sequence__layer--result {
   opacity: 1;
   transform: scale(1);
 }
@@ -2133,10 +2145,25 @@ body {
 }
 
 .archive-intro.is-love-weekly .call-sequence__layer--weekly,
-.archive-intro.is-love-result .call-sequence__layer--result {
+.archive-intro.is-love-result .call-sequence__layer--result,
+.archive-intro.is-tv-powering-off .call-sequence__layer--result {
   z-index: 10;
   opacity: 1;
   visibility: visible;
+}
+
+.archive-intro.is-tv-powering-off .call-sequence {
+  animation: storyTvSignalOff 760ms cubic-bezier(0.76, 0, 0.24, 1) both;
+  pointer-events: none;
+  transform-origin: var(--tv-screen-center-x) var(--tv-screen-center-y);
+}
+
+.archive-intro.is-tv-powering-off .broadcast-static {
+  animation: storyTvStaticOff 760ms steps(4, end) both;
+}
+
+.archive-intro.is-tv-powering-off .broadcast-camera::after {
+  animation: storyCameraBlackout 760ms ease-in both;
 }
 
 .archive-intro.is-love-news .broadcast-static {
@@ -2239,6 +2266,16 @@ body {
   transition-delay: 2600ms;
 }
 
+.archive-intro:is(.is-tv-powering-off, .is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .archive-global-nav {
+  opacity: 0.58;
+  transition-delay: 0ms;
+}
+
+.archive-intro:is(.is-tv-powering-off, .is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .archive-global-nav:hover,
+.archive-intro:is(.is-tv-powering-off, .is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .archive-global-nav:focus-within {
+  opacity: 0.92;
+}
+
 .story-scene {
   position: absolute;
   inset: 0;
@@ -2265,6 +2302,17 @@ body {
   will-change: filter, opacity, transform;
 }
 
+.story-scene::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 18%), transparent 26%, transparent 66%, rgb(0 0 0 / 38%)),
+    radial-gradient(ellipse at 52% 46%, transparent 28%, rgb(0 0 0 / 12%) 54%, rgb(0 0 0 / 48%) 100%);
+  content: "";
+  pointer-events: none;
+}
+
 .story-scene__advance {
   position: absolute;
   inset: 0;
@@ -2286,6 +2334,28 @@ body {
 .story-scene__advance:focus-visible {
   outline: 1px solid rgb(255 250 243 / 56%);
   outline-offset: -14px;
+}
+
+.story-scene__hint {
+  position: absolute;
+  bottom: clamp(30px, 7.2%, 70px);
+  left: 50%;
+  z-index: 6;
+  margin: 0;
+  color: rgb(242 237 231 / 48%);
+  font-family: var(--archive-condensed);
+  font-size: clamp(11px, 1.08vw, 16px);
+  font-stretch: condensed;
+  font-weight: 400;
+  letter-spacing: 0.035em;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 96%),
+    0 0 12px rgb(255 176 225 / 8%);
+  transform: translateX(-50%) scaleX(0.92);
+  white-space: nowrap;
 }
 
 .story-scene--room::before {
@@ -2363,11 +2433,11 @@ body {
 }
 
 .archive-intro.is-room-revealing .story-scene--room::before {
-  animation: storyPowerOff 420ms ease-out both;
+  animation: storyRoomBlackout 540ms ease-out both;
 }
 
 .archive-intro.is-room-revealing .story-scene__image--room {
-  animation: storyRoomPullback 1800ms 300ms cubic-bezier(0.76, 0, 0.24, 1) both;
+  animation: storyRoomPullback 2100ms 220ms cubic-bezier(0.76, 0, 0.24, 1) both;
 }
 
 .archive-intro.is-trend-room .story-scene--room {
@@ -2376,22 +2446,26 @@ body {
 }
 
 .archive-intro.is-trend-room .story-scene__image--room {
-  filter: none;
+  filter: brightness(0.78) contrast(1.1) saturate(0.8);
   transform: scale(1);
+}
+
+.archive-intro.is-trend-room .story-scene__hint {
+  animation: storyHintIn 1400ms steps(3, end) 420ms both;
 }
 
 .archive-intro.is-city-entering .story-scene--room {
   opacity: 0;
-  transition-delay: 820ms;
+  transition-delay: 1080ms;
 }
 
 .archive-intro.is-city-entering .story-scene__image--room {
-  filter: brightness(1.08) saturate(1.18) blur(0.6px);
+  filter: brightness(0.72) contrast(1.14) saturate(0.72) blur(0.8px);
   transform: scale(2.35);
   transform-origin: 87% 31%;
   transition:
-    filter 1300ms ease,
-    transform 1500ms cubic-bezier(0.76, 0, 0.24, 1);
+    filter 1750ms ease,
+    transform 1900ms cubic-bezier(0.76, 0, 0.24, 1);
 }
 
 .archive-intro.is-city-entering .story-scene__billboard-flash {
@@ -2400,7 +2474,7 @@ body {
 
 .story-scene--city {
   z-index: 10;
-  background: transparent;
+  background: #000;
 }
 
 .story-scene__image--city {
@@ -2414,12 +2488,12 @@ body {
 }
 
 .archive-intro.is-city-entering .story-scene--city {
-  transition-delay: 920ms;
+  transition-delay: 1180ms;
 }
 
 .archive-intro.is-city-entering .story-scene__image--city,
 .archive-intro.is-trend-city .story-scene__image--city {
-  filter: brightness(1) contrast(1.04) saturate(1.02);
+  filter: brightness(0.96) contrast(1.08) saturate(0.82);
   opacity: 1;
   transform: scale(1);
 }
@@ -2430,32 +2504,83 @@ body {
 }
 
 .archive-intro:is(.is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .broadcast-camera,
-.archive-intro:is(.is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .broadcast-subtitle-call,
-.archive-intro:is(.is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .call-advance-outside,
-.archive-intro:is(.is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .call-mute {
+.archive-intro:is(.is-tv-powering-off, .is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .call-advance-outside,
+.archive-intro:is(.is-tv-powering-off, .is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .call-mute {
   opacity: 0;
   pointer-events: none;
 }
 
-@keyframes storyPowerOff {
-  0%, 64% { opacity: 1; }
+.archive-intro:is(.is-tv-powering-off, .is-room-revealing, .is-trend-room, .is-city-entering, .is-trend-city) .broadcast-subtitle-call {
+  display: none;
+  visibility: hidden;
+  animation: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@keyframes storyTvSignalOff {
+  0%, 34% {
+    filter: brightness(1) contrast(1);
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scaleY(1);
+  }
+
+  58% {
+    filter: brightness(2.2) contrast(1.8) saturate(0.15);
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scaleY(0.055);
+  }
+
+  76% {
+    filter: brightness(3) contrast(2.2) saturate(0);
+    opacity: 0.92;
+    transform: translate3d(0, 0, 0) scaleY(0.008);
+  }
+
+  100% {
+    filter: brightness(0) contrast(2.4) saturate(0);
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scaleY(0.002);
+  }
+}
+
+@keyframes storyTvStaticOff {
+  0%, 38% { opacity: 0.2; filter: brightness(1.1) contrast(1.2); }
+  54% { opacity: 0.72; filter: brightness(2.4) contrast(2.1) grayscale(1); }
+  72%, 100% { opacity: 0; filter: brightness(0) contrast(2.4) grayscale(1); }
+}
+
+@keyframes storyCameraBlackout {
+  0%, 72% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes storyRoomBlackout {
+  0%, 28% { opacity: 1; }
   100% { opacity: 0; }
 }
 
 @keyframes storyRoomPullback {
   0% {
-    filter: brightness(0.08) blur(2px);
+    filter: brightness(0.34) contrast(1.18) saturate(0.65) blur(1.6px);
     transform: scale(2.6);
     transform-origin: 50% 46%;
   }
 
-  18% { filter: brightness(0.5) blur(1px); }
+  22% { filter: brightness(0.48) contrast(1.15) saturate(0.72) blur(0.9px); }
 
   100% {
-    filter: none;
+    filter: brightness(0.78) contrast(1.1) saturate(0.8);
     transform: scale(1);
     transform-origin: 50% 46%;
   }
+}
+
+@keyframes storyHintIn {
+  0%, 38% { opacity: 0; filter: blur(1px); }
+  46% { opacity: 0.18; }
+  54% { opacity: 0; }
+  68%, 100% { opacity: 1; filter: blur(0); }
 }
 
 @keyframes storyBillboardFlash {
@@ -2947,7 +3072,8 @@ body {
     .doctrine-closer,
     .doctrine-click-hint,
     .story-scene,
-    .story-scene__image {
+    .story-scene__image,
+    .story-scene__hint {
     transition-duration: 1ms;
     transition-delay: 0ms;
   }
@@ -2976,15 +3102,27 @@ body {
   .story-scene__image--room,
   .story-scene__billboard-flash,
   .story-camcorder__noise,
-  .story-camcorder__bar {
+  .story-camcorder__bar,
+  .archive-intro.is-tv-powering-off .call-sequence,
+  .archive-intro.is-tv-powering-off .broadcast-static,
+  .archive-intro.is-tv-powering-off .broadcast-camera::after,
+  .archive-intro.is-trend-room .story-scene__hint {
     animation-duration: 1ms;
     animation-delay: 0ms;
   }
 
-  .archive-intro.is-room-revealing .story-scene__image--room,
-  .archive-intro.is-city-entering .story-scene__image--room,
+  .archive-intro.is-room-revealing .story-scene__image--room {
+    filter: brightness(0.78) contrast(1.1) saturate(0.8);
+    transform: none;
+  }
+
+  .archive-intro.is-city-entering .story-scene__image--room {
+    filter: brightness(0.72) contrast(1.14) saturate(0.72);
+    transform: none;
+  }
+
   .archive-intro.is-city-entering .story-scene__image--city {
-    filter: none;
+    filter: brightness(0.96) contrast(1.08) saturate(0.82);
     transform: none;
   }
 
@@ -2993,6 +3131,11 @@ body {
   .archive-intro.is-trend-room .story-scene--room,
   .archive-intro.is-trend-city .story-scene--city {
     animation: none;
+  }
+
+  .archive-intro.is-trend-room .story-scene__hint {
+    opacity: 1;
+    filter: none;
   }
 
   .archive-intro.is-call-answered .call-dialogue__line {
