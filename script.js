@@ -1796,3 +1796,35 @@ for (const choice of loveWeeklyChoices) {
 }
 
 resetCallSequence();
+
+function startLocalStoryPreview() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (window.location.protocol !== "file:" || params.get("full") === "1") {
+    return;
+  }
+
+  clearArchiveTimers();
+  stopCallAudio();
+  hasEnteredArchive = true;
+  pointer.active = false;
+  enterButton.disabled = true;
+  intro.classList.add("is-broadcast");
+  prologueScene?.setAttribute("aria-hidden", "true");
+  doctrineScene?.setAttribute("aria-hidden", "true");
+  broadcastScene?.setAttribute("aria-hidden", "false");
+
+  if (broadcastScene) {
+    broadcastScene.inert = false;
+  }
+
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
+
+  setBroadcastCallDisabled(true);
+  setStoryState("trend-city");
+  announceCallStatus("Local preview. Love World city spread observed. Look closer to continue.");
+}
+
+startLocalStoryPreview();
