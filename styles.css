@@ -2540,6 +2540,53 @@ body {
   pointer-events: auto;
 }
 
+.story-scene__city-advance {
+  position: absolute;
+  bottom: clamp(28px, 5.8%, 58px);
+  left: 50%;
+  z-index: 7;
+  min-width: clamp(150px, 18vw, 250px);
+  padding: 0.45em 1.2em 0.5em;
+  border: 1px solid rgb(246 244 241 / 22%);
+  appearance: none;
+  background: rgb(0 0 0 / 24%);
+  color: rgb(246 244 241 / 84%);
+  cursor: pointer;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  font-size: clamp(18px, 1.85vw, 30px);
+  font-stretch: condensed;
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 1;
+  opacity: 0;
+  text-shadow:
+    0 2px 3px rgb(0 0 0 / 96%),
+    0 0 8px rgb(0 0 0 / 72%);
+  transform: translate(-50%, 4px) scaleX(0.86);
+  transform-origin: center;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+.story-scene__city-advance:disabled {
+  pointer-events: none;
+}
+
+.archive-intro.is-trend-city .story-scene__city-advance {
+  animation: storyCityAdvanceIn 720ms ease 680ms both;
+  pointer-events: auto;
+}
+
+.story-scene__city-advance:hover,
+.story-scene__city-advance:focus-visible {
+  border-color: rgb(246 244 241 / 48%);
+  background: rgb(0 0 0 / 42%);
+  color: rgb(255 250 246 / 98%);
+  outline: none;
+}
+
 .story-scene--friends {
   z-index: 11;
   background: #000;
@@ -2761,6 +2808,18 @@ body {
 @keyframes storyFocusDrift {
   0%, 68%, 100% { filter: blur(0); }
   72%, 82% { filter: blur(0.22px); }
+}
+
+@keyframes storyCityAdvanceIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 4px) scaleX(0.86);
+  }
+
+  to {
+    opacity: 0.78;
+    transform: translate(-50%, 0) scaleX(0.86);
+  }
 }
 
 @keyframes storyFriendsObserve {
@@ -3286,6 +3345,7 @@ body {
     .doctrine-click-hint,
     .story-scene,
     .story-scene__image,
+    .story-scene__city-advance,
     .story-scene__phone-subtitle,
     .story-friends__subtitle,
     .story-friends__flash,
@@ -3323,6 +3383,7 @@ body {
   .archive-intro.is-trend-room .story-camcorder::after,
   .archive-intro.is-room-phone-question.is-room-phone-entering .story-scene__phone-subtitle,
   .archive-intro.is-room-phone-question.is-room-phone-pulse .story-scene__phone-subtitle,
+  .archive-intro.is-trend-city .story-scene__city-advance,
   .archive-intro.is-tv-powering-off .call-sequence,
   .archive-intro.is-tv-powering-off .broadcast-static,
   .archive-intro.is-tv-powering-off .broadcast-camera::after {

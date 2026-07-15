@@ -24,6 +24,7 @@ const roomScene = document.querySelector(".story-scene--room");
 const cityScene = document.querySelector(".story-scene--city");
 const friendsScene = document.querySelector(".story-scene--friends");
 const roomAdvanceButton = document.querySelector(".story-scene__advance");
+const cityAdvanceButton = document.querySelector(".story-scene__city-advance");
 const globalNavButtons = document.querySelectorAll(".archive-global-nav__button[data-destination]");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -502,6 +503,10 @@ function updateStorySceneAccessibility(state) {
 
   if (roomAdvanceButton) {
     roomAdvanceButton.disabled = state !== "trend-room";
+  }
+
+  if (cityAdvanceButton) {
+    cityAdvanceButton.disabled = state !== "trend-city";
   }
 }
 
@@ -1414,32 +1419,33 @@ function startCityTransition() {
     }
 
     setStoryState("trend-city");
-    announceCallStatus("Love World trend archive. City spread observed.");
-
-    scheduleCallStep(() => {
-      if (archiveState !== "trend-city" || !friendsScene) {
-        return;
-      }
-
-      setStoryState("trend-friends");
-      announceCallStatus("Friends leave a neighborhood Love World event. One last charm is added before the photograph.");
-
-      scheduleCallStep(() => {
-        if (archiveState === "trend-friends") {
-          playCameraShutter();
-        }
-      }, prefersReducedMotion.matches ? 540 : 6700);
-
-      scheduleCallStep(() => {
-        if (archiveState !== "trend-friends") {
-          return;
-        }
-
-        setStoryState("story-ended");
-        announceCallStatus("The neighborhood trend archive ends on the photograph.");
-      }, prefersReducedMotion.matches ? 900 : 7600);
-    }, prefersReducedMotion.matches ? 600 : 3200);
+    announceCallStatus("Love World trend archive. City spread observed. Look closer to continue.");
   }, prefersReducedMotion.matches ? 60 : 2200);
+}
+
+function startFriendsEnding() {
+  if (archiveState !== "trend-city" || !friendsScene) {
+    return;
+  }
+
+  clearCallTimers();
+  setStoryState("trend-friends");
+  announceCallStatus("Friends leave a neighborhood Love World event. One last charm is added before the photograph.");
+
+  scheduleCallStep(() => {
+    if (archiveState === "trend-friends") {
+      playCameraShutter();
+    }
+  }, prefersReducedMotion.matches ? 540 : 6700);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "trend-friends") {
+      return;
+    }
+
+    setStoryState("story-ended");
+    announceCallStatus("The neighborhood trend archive ends on the photograph.");
+  }, prefersReducedMotion.matches ? 900 : 7600);
 }
 
 function returnToTrendCity() {
@@ -1746,6 +1752,13 @@ if (roomAdvanceButton) {
   roomAdvanceButton.addEventListener("click", (event) => {
     event.stopPropagation();
     startCityTransition();
+  });
+}
+
+if (cityAdvanceButton) {
+  cityAdvanceButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    startFriendsEnding();
   });
 }
 
