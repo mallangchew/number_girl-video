@@ -2276,9 +2276,14 @@ body {
   opacity: 0.92;
 }
 
-.archive-intro:is(.is-trend-friends, .is-story-ended) .archive-global-nav,
-.archive-intro:is(.is-trend-friends, .is-story-ended) .archive-global-nav:hover,
-.archive-intro:is(.is-trend-friends, .is-story-ended) .archive-global-nav:focus-within {
+.archive-intro.is-trend-friends .archive-global-nav {
+  pointer-events: auto;
+  animation: storyFriendsNavFade 10700ms linear both;
+}
+
+.archive-intro.is-story-ended .archive-global-nav,
+.archive-intro.is-story-ended .archive-global-nav:hover,
+.archive-intro.is-story-ended .archive-global-nav:focus-within {
   opacity: 0;
   pointer-events: none;
 }
@@ -2604,7 +2609,7 @@ body {
 
 .archive-intro.is-trend-friends .story-scene__image--friends {
   opacity: 1;
-  animation: storyFriendsObserve 7600ms linear both;
+  animation: storyFriendsObserve 10700ms linear both;
 }
 
 .archive-intro.is-story-ended .story-scene__image--friends {
@@ -2637,11 +2642,11 @@ body {
 }
 
 .archive-intro.is-trend-friends .story-friends__subtitle--hold {
-  animation: storyFriendsHoldSubtitle 7600ms steps(2, end) both;
+  animation: storyFriendsHoldSubtitle 10700ms steps(1, end) both;
 }
 
 .archive-intro.is-trend-friends .story-friends__subtitle--ready {
-  animation: storyFriendsReadySubtitle 7600ms steps(2, end) both;
+  animation: storyFriendsReadySubtitle 10700ms steps(1, end) both;
 }
 
 .story-friends__flash,
@@ -2664,11 +2669,23 @@ body {
 }
 
 .archive-intro.is-trend-friends .story-friends__flash {
-  animation: storyFriendsFlash 7600ms steps(2, end) both;
+  animation: storyFriendsFlash 10700ms steps(1, end) both;
 }
 
 .archive-intro.is-trend-friends .story-friends__blackout {
-  animation: storyFriendsBlackout 7600ms steps(1, end) both;
+  animation: storyFriendsBlackout 10700ms linear both;
+}
+
+.archive-intro.is-trend-friends .story-scene--friends .story-camcorder__noise {
+  animation:
+    storyCamcorderNoise 780ms steps(3, end) infinite,
+    storyFriendsNoiseFreeze 10700ms steps(1, end) both;
+}
+
+.archive-intro.is-trend-friends .story-scene--friends .story-camcorder__bar {
+  animation:
+    storyCamcorderBar 6200ms linear infinite,
+    storyFriendsBarFreeze 10700ms steps(1, end) both;
 }
 
 .archive-intro.is-story-ended .story-friends__blackout {
@@ -2829,16 +2846,17 @@ body {
     transform: scale(1.015) translate3d(0, 0, 0);
   }
 
-  38% {
+  28% {
     filter: brightness(0.96) contrast(1.06) saturate(0.84) blur(0);
     transform: scale(1.035) translate3d(-0.55%, 0, 0);
   }
 
-  72% {
+  47% {
     filter: brightness(0.93) contrast(1.08) saturate(0.8) blur(0.12px);
     transform: scale(1.062) translate3d(-1.75%, 0, 0);
   }
 
+  65%,
   100% {
     filter: brightness(0.9) contrast(1.08) saturate(0.78) blur(0);
     transform: scale(1.075) translate3d(-2.4%, 0, 0);
@@ -2846,26 +2864,41 @@ body {
 }
 
 @keyframes storyFriendsHoldSubtitle {
-  0%, 34% { opacity: 0; }
-  39%, 51% { opacity: 0.96; }
-  56%, 100% { opacity: 0; }
+  0%, 27% { opacity: 0; }
+  28%, 46% { opacity: 0.96; }
+  47%, 100% { opacity: 0; }
 }
 
 @keyframes storyFriendsReadySubtitle {
-  0%, 66% { opacity: 0; }
-  71%, 82% { opacity: 0.96; }
-  86%, 100% { opacity: 0; }
+  0%, 50% { opacity: 0; }
+  51%, 61% { opacity: 0.96; }
+  62%, 100% { opacity: 0; }
 }
 
 @keyframes storyFriendsFlash {
-  0%, 85% { opacity: 0; }
-  88% { opacity: 1; }
-  91%, 100% { opacity: 0; }
+  0%, 65% { opacity: 0; }
+  66% { opacity: 1; }
+  67%, 100% { opacity: 0; }
 }
 
 @keyframes storyFriendsBlackout {
-  0%, 90% { opacity: 0; }
-  94%, 100% { opacity: 1; }
+  0%, 86% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes storyFriendsNavFade {
+  0%, 86% { opacity: 0.58; }
+  100% { opacity: 0; }
+}
+
+@keyframes storyFriendsNoiseFreeze {
+  0%, 67% { opacity: 0.28; }
+  68%, 100% { opacity: 0; }
+}
+
+@keyframes storyFriendsBarFreeze {
+  0%, 67% { opacity: 0.38; }
+  68%, 100% { opacity: 0; }
 }
 
 @keyframes storyCamcorderNoise {
@@ -3413,8 +3446,13 @@ body {
     transform: none;
   }
 
-  .archive-intro.is-trend-friends .story-friends__subtitle--ready {
+  .archive-intro.is-trend-friends .story-friends__subtitle--hold {
     opacity: 1;
+  }
+
+  .archive-intro.is-trend-friends .archive-global-nav {
+    opacity: 0.58;
+    pointer-events: auto;
   }
 
   .story-camcorder__noise,
@@ -3422,6 +3460,7 @@ body {
   .archive-intro.is-trend-room .story-scene--room,
   .archive-intro.is-trend-city .story-scene--city,
   .archive-intro.is-trend-friends .story-scene__image--friends,
+  .archive-intro.is-trend-friends .archive-global-nav,
   .archive-intro.is-trend-friends .story-friends__subtitle,
   .archive-intro.is-trend-friends .story-friends__flash,
   .archive-intro.is-trend-friends .story-friends__blackout {

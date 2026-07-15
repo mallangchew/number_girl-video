@@ -1436,7 +1436,7 @@ function startFriendsEnding() {
     if (archiveState === "trend-friends") {
       playCameraShutter();
     }
-  }, prefersReducedMotion.matches ? 540 : 6700);
+  }, prefersReducedMotion.matches ? 5500 : 7000);
 
   scheduleCallStep(() => {
     if (archiveState !== "trend-friends") {
@@ -1445,7 +1445,7 @@ function startFriendsEnding() {
 
     setStoryState("story-ended");
     announceCallStatus("The neighborhood trend archive ends on the photograph.");
-  }, prefersReducedMotion.matches ? 900 : 7600);
+  }, prefersReducedMotion.matches ? 8500 : 10700);
 }
 
 function returnToTrendCity() {
