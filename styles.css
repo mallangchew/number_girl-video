@@ -2545,11 +2545,10 @@ body {
   bottom: clamp(28px, 5.8%, 58px);
   left: 50%;
   z-index: 7;
-  min-width: clamp(150px, 18vw, 250px);
-  padding: 0.45em 1.2em 0.5em;
-  border: 1px solid rgb(246 244 241 / 22%);
+  padding: 0.65em 1.4em;
+  border: 0;
   appearance: none;
-  background: rgb(0 0 0 / 24%);
+  background: transparent;
   color: rgb(246 244 241 / 84%);
   cursor: pointer;
   font-family: "Arial Narrow", Arial, sans-serif;
@@ -2565,9 +2564,9 @@ body {
   transform: translate(-50%, 4px) scaleX(0.86);
   transform-origin: center;
   transition:
-    background 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease;
+    color 180ms ease,
+    filter 180ms ease,
+    text-shadow 180ms ease;
 }
 
 .story-scene__city-advance:disabled {
@@ -2581,10 +2580,12 @@ body {
 
 .story-scene__city-advance:hover,
 .story-scene__city-advance:focus-visible {
-  border-color: rgb(246 244 241 / 48%);
-  background: rgb(0 0 0 / 42%);
   color: rgb(255 250 246 / 98%);
+  filter: brightness(1.2);
   outline: none;
+  text-shadow:
+    0 2px 3px rgb(0 0 0 / 96%),
+    0 0 12px rgb(255 255 255 / 36%);
 }
 
 .story-scene--friends {
