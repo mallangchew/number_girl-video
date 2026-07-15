@@ -9,12 +9,21 @@ const prologueEntryButtons = document.querySelectorAll(".prologue-copy");
 const doctrineScene = document.querySelector(".doctrine-scene");
 const doctrineCloserButtons = document.querySelectorAll("button.doctrine-closer");
 const broadcastScene = document.querySelector(".broadcast-scene");
+const broadcastCamera = document.querySelector(".broadcast-camera");
+const broadcastAdVideo = document.querySelector(".broadcast-ad__video");
+const broadcastAdAudio = document.querySelector(".broadcast-ad__audio");
+const newsVideo = document.querySelector(".call-news__video");
 const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
 const callSequence = document.querySelector(".call-sequence");
 const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
 const callAdvanceButton = document.querySelector(".call-advance-outside");
 const callMuteButton = document.querySelector(".call-mute");
 const callLiveStatus = document.querySelector(".call-live-status");
+const loveWeeklyChoices = document.querySelectorAll("[data-love-type]");
+const roomScene = document.querySelector(".story-scene--room");
+const cityScene = document.querySelector(".story-scene--city");
+const roomAdvanceButton = document.querySelector(".story-scene__advance");
+const globalNavButtons = document.querySelectorAll(".archive-global-nav__button[data-destination]");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const layout = intro?.dataset.layout || "portrait";
@@ -45,11 +54,13 @@ const maxFrameMs = 1000 / 24;
 const archiveTimers = [];
 const callTimers = [];
 const callAudioNodes = new Set();
-const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news"];
+const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news", "is-trend-interviews", "is-love-weekly", "is-love-result"];
+const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city"];
 const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
 const callRecordedLockMs = 900;
+const roomRingIntervals = [3300, 5200, 4100, 6800];
 let archiveState = "idle";
 let hasEnteredArchive = false;
 let ritualStartedFrame = 0;
@@ -57,6 +68,7 @@ let callAudioContext = null;
 let callAudioGain = null;
 let isCallMuted = false;
 let callAdvanceMode = null;
+let roomRingCount = 0;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
@@ -467,11 +479,40 @@ function updateCallLayerAccessibility(activeLayer) {
   }
 }
 
+function updateStorySceneAccessibility(state) {
+  const isRoomVisible = ["room-revealing", "trend-room", "city-entering"].includes(state);
+  const isCityVisible = ["city-entering", "trend-city"].includes(state);
+
+  if (roomScene) {
+    roomScene.setAttribute("aria-hidden", String(!isRoomVisible));
+    roomScene.inert = !isRoomVisible;
+  }
+
+  if (cityScene) {
+    cityScene.setAttribute("aria-hidden", String(!isCityVisible));
+    cityScene.inert = !isCityVisible;
+  }
+
+  if (roomAdvanceButton) {
+    roomAdvanceButton.disabled = state !== "trend-room";
+  }
+}
+
 function setCallState(state) {
-  intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
   archiveState = state;
   intro.classList.add(`is-${state}`);
   updateCallLayerAccessibility(state);
+  updateStorySceneAccessibility(null);
+}
+
+function setStoryState(state) {
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
+  archiveState = state;
+  intro.classList.add(`is-${state}`);
+  setCallAdvanceMode(null);
+  updateCallLayerAccessibility(null);
+  updateStorySceneAccessibility(state);
 }
 
 function setCallAdvanceMode(mode) {
@@ -565,6 +606,91 @@ function playRingCue() {
     trackCallAudioNode(lowTone);
     trackCallAudioNode(overtone);
   } catch {}
+}
+
+function playRoomTelephoneRing() {
+  if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
+    return;
+  }
+
+  try {
+    const now = callAudioContext.currentTime;
+    const bellGain = callAudioContext.createGain();
+    const bellFilter = callAudioContext.createBiquadFilter();
+    const bellPanner = typeof callAudioContext.createStereoPanner === "function"
+      ? callAudioContext.createStereoPanner()
+      : null;
+    const lowerBell = callAudioContext.createOscillator();
+    const upperBell = callAudioContext.createOscillator();
+    const strikes = [0, 0.3, 0.82, 1.12];
+
+    lowerBell.type = "square";
+    lowerBell.frequency.value = 510;
+    lowerBell.detune.value = -7;
+    upperBell.type = "sine";
+    upperBell.frequency.value = 690;
+    upperBell.detune.value = 9;
+    bellFilter.type = "bandpass";
+    bellFilter.frequency.value = 760;
+    bellFilter.Q.value = 1.25;
+    if (bellPanner) {
+      bellPanner.pan.value = -0.72;
+    }
+    bellGain.gain.setValueAtTime(0.0001, now);
+
+    for (const offset of strikes) {
+      bellGain.gain.setValueAtTime(0.0001, now + offset);
+      bellGain.gain.exponentialRampToValueAtTime(0.068, now + offset + 0.012);
+      bellGain.gain.setValueAtTime(0.052, now + offset + 0.09);
+      bellGain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.28);
+    }
+
+    lowerBell.connect(bellFilter);
+    upperBell.connect(bellFilter);
+    bellFilter.connect(bellGain);
+    if (bellPanner) {
+      bellGain.connect(bellPanner);
+      bellPanner.connect(callAudioGain);
+    } else {
+      bellGain.connect(callAudioGain);
+    }
+    lowerBell.start(now);
+    upperBell.start(now);
+    lowerBell.stop(now + 1.48);
+    upperBell.stop(now + 1.48);
+    trackCallAudioNode(lowerBell);
+    trackCallAudioNode(upperBell);
+  } catch {}
+}
+
+function resetRoomTelephoneSequence() {
+  roomRingCount = 0;
+  intro.classList.remove("is-room-phone-question", "is-room-phone-entering", "is-room-phone-pulse");
+}
+
+function scheduleRoomTelephoneRing(delay) {
+  scheduleCallStep(() => {
+    if (archiveState !== "trend-room") {
+      return;
+    }
+
+    playRoomTelephoneRing();
+    roomRingCount += 1;
+
+    if (roomRingCount === 1) {
+      announceCallStatus("The billboard illuminates the room. The telephone rings.");
+    } else if (roomRingCount === 2) {
+      intro.classList.add("is-room-phone-question", "is-room-phone-entering");
+      announceCallStatus("What's with that phone?");
+    } else {
+      intro.classList.remove("is-room-phone-pulse");
+      void intro.offsetWidth;
+      intro.classList.add("is-room-phone-pulse");
+    }
+
+    const nextDelay = roomRingIntervals[(roomRingCount - 1) % roomRingIntervals.length];
+    scheduleRoomTelephoneRing(nextDelay);
+  }, delay);
 }
 
 function playStaticCut() {
@@ -665,13 +791,75 @@ function playNewsPowerAudio() {
 function resetCallSequence() {
   clearCallTimers();
   stopCallAudio();
+  resetRoomTelephoneSequence();
+  stopBroadcastAdMedia();
+  stopNewsVideo();
   setCallAdvanceMode(null);
-  intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on", "is-broadcast-video-ready");
   updateCallLayerAccessibility(null);
+  updateStorySceneAccessibility(null);
   setBroadcastCallDisabled(archiveState !== "broadcast");
 
   if (callMuteButton) {
     callMuteButton.hidden = true;
+  }
+}
+
+function stopBroadcastAdMedia() {
+  intro.classList.remove("is-broadcast-video-ready");
+
+  for (const media of [broadcastAdVideo, broadcastAdAudio]) {
+    if (!media) {
+      continue;
+    }
+
+    media.pause();
+    try {
+      media.currentTime = 0;
+    } catch {}
+  }
+}
+
+function stopNewsVideo() {
+  if (!newsVideo) {
+    return;
+  }
+
+  newsVideo.pause();
+  try {
+    newsVideo.currentTime = 0;
+  } catch {}
+}
+
+function playNewsVideo() {
+  if (!newsVideo) {
+    return;
+  }
+
+  try {
+    newsVideo.currentTime = 0;
+  } catch {}
+  newsVideo.play().catch(() => {});
+}
+
+function playBroadcastAdMedia() {
+  if (broadcastAdVideo) {
+    try {
+      broadcastAdVideo.currentTime = 0;
+    } catch {}
+
+    broadcastAdVideo.muted = true;
+    broadcastAdVideo.play()
+      .then(() => intro.classList.add("is-broadcast-video-ready"))
+      .catch(() => intro.classList.remove("is-broadcast-video-ready"));
+  }
+
+  if (broadcastAdAudio) {
+    try {
+      broadcastAdAudio.currentTime = 0;
+    } catch {}
+
+    broadcastAdAudio.play().catch(() => {});
   }
 }
 
@@ -915,7 +1103,17 @@ function returnToDoctrineFromBroadcast() {
 }
 
 function goBack() {
-  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast"].includes(archiveState)) {
+  if (archiveState === "trend-city" || archiveState === "city-entering") {
+    returnToTrendRoom();
+    return;
+  }
+
+  if (archiveState === "trend-room" || archiveState === "room-revealing" || archiveState === "tv-powering-off") {
+    returnToLoveResult();
+    return;
+  }
+
+  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast", "love-news", "trend-interviews", "love-weekly", "love-result"].includes(archiveState)) {
     returnToOriginalBroadcast();
     return;
   }
@@ -974,24 +1172,46 @@ function enterBroadcast() {
   setDoctrineCloserDisabled(true);
   setBroadcastCallDisabled(true);
 
-  scheduleArchiveStep(() => {
-    archiveState = "broadcast";
-    intro.classList.remove("is-broadcast-entering", "is-doctrine");
-    intro.classList.add("is-broadcast");
-    setBroadcastCallDisabled(false);
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
 
-    if (doctrineScene) {
-      doctrineScene.setAttribute("aria-hidden", "true");
+  scheduleArchiveStep(completeBroadcast, 4200);
+}
+
+function completeBroadcast() {
+  if (archiveState !== "broadcast-entering") {
+    return;
+  }
+
+  archiveState = "broadcast";
+  intro.classList.remove("is-broadcast-entering", "is-doctrine");
+  intro.classList.add("is-broadcast");
+  setBroadcastCallDisabled(true);
+  playBroadcastAdMedia();
+  scheduleArchiveStep(() => {
+    if (archiveState === "broadcast") {
+      setBroadcastCallDisabled(false);
     }
-  }, 3000);
+  }, 1300);
+
+  if (doctrineScene) {
+    doctrineScene.setAttribute("aria-hidden", "true");
+  }
 }
 
 function returnToOriginalBroadcast() {
   resetCallSequence();
   archiveState = "broadcast";
-  setBroadcastCallDisabled(false);
-  intro.classList.remove(...callStateClasses, "is-broadcast-called", "is-call-static-cut", "is-broadcast-power-cut", "is-broadcast-power-on");
+  setBroadcastCallDisabled(true);
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-broadcast-power-cut", "is-broadcast-power-on");
   intro.classList.add("is-broadcast");
+  playBroadcastAdMedia();
+  scheduleArchiveStep(() => {
+    if (archiveState === "broadcast") {
+      setBroadcastCallDisabled(false);
+    }
+  }, 1300);
   announceCallStatus("Call cancelled. Original broadcast restored.");
 }
 
@@ -1009,10 +1229,9 @@ function finishCallSequence() {
   announceCallStatus("Love broadcast. 사랑하세요. 모두 사랑하세요.");
   scheduleCallStep(() => {
     if (archiveState === "love-broadcast") {
-      setCallAdvanceMode("to-news");
-      announceCallStatus("Love broadcast. Click to continue.");
+      showLoveNews();
     }
-  }, 1200);
+  }, 3200);
 }
 
 function showLoveNews() {
@@ -1025,12 +1244,151 @@ function showLoveNews() {
   scheduleCallStep(() => {
     setCallState("love-news");
     intro.classList.add("is-broadcast-power-on");
+    playNewsVideo();
     announceCallStatus("Love World news. Love trend spreads.");
   }, 620);
 
   scheduleCallStep(() => {
     intro.classList.remove("is-broadcast-power-on");
   }, 1320);
+
+  scheduleCallStep(() => {
+    if (archiveState === "love-news") {
+      showTrendInterviews();
+    }
+  }, 15700);
+}
+
+function showTrendInterviews() {
+  setCallAdvanceMode(null);
+  clearCallTimers();
+  setCallState("trend-interviews");
+  announceCallStatus("Trend archive. Interview recording started.");
+
+  scheduleCallStep(() => {
+    if (archiveState === "trend-interviews") {
+      announceCallStatus("Love status unconfirmed.");
+    }
+  }, 6100);
+
+  scheduleCallStep(() => {
+    if (archiveState === "trend-interviews") {
+      showLoveWeekly();
+    }
+  }, 11800);
+}
+
+function showLoveWeekly() {
+  setCallAdvanceMode(null);
+  clearCallTimers();
+  setCallState("love-weekly");
+  announceCallStatus("Love World Weekly. Find out where you belong.");
+}
+
+function showLoveResult() {
+  if (archiveState !== "love-weekly") {
+    return;
+  }
+
+  setCallState("love-result");
+  if (callSequence) {
+    callSequence.tabIndex = 0;
+  }
+  announceCallStatus("Your love type is unconfirmed. No action is required.");
+}
+
+function startRoomReveal() {
+  if (archiveState !== "love-result" || !roomScene) {
+    return;
+  }
+
+  clearCallTimers();
+  stopCallAudio();
+  resetRoomTelephoneSequence();
+  stopBroadcastAdMedia();
+  stopNewsVideo();
+  setBroadcastCallDisabled(true);
+  setStoryState("tv-powering-off");
+  playNewsPowerAudio();
+  announceCallStatus("The television signal is powering off.");
+
+  scheduleCallStep(() => {
+    if (archiveState !== "tv-powering-off") {
+      return;
+    }
+
+    setStoryState("room-revealing");
+    announceCallStatus("The television is off. Love World is already in the room.");
+
+    scheduleCallStep(() => {
+      if (archiveState !== "room-revealing") {
+        return;
+      }
+
+      setStoryState("trend-room");
+
+      if (roomAdvanceButton) {
+        roomAdvanceButton.disabled = true;
+      }
+
+      announceCallStatus("The room is adjusting to the remaining signal.");
+
+      scheduleRoomTelephoneRing(prefersReducedMotion.matches ? 100 : 900);
+
+      scheduleCallStep(() => {
+        if (archiveState !== "trend-room") {
+          return;
+        }
+
+        if (roomAdvanceButton) {
+          roomAdvanceButton.disabled = false;
+        }
+
+        announceCallStatus("The room remains under observation.");
+      }, prefersReducedMotion.matches ? 3600 : 5900);
+    }, prefersReducedMotion.matches ? 80 : 3900);
+  }, prefersReducedMotion.matches ? 40 : 760);
+}
+
+function startCityTransition() {
+  if (archiveState !== "trend-room" || !cityScene) {
+    return;
+  }
+
+  clearCallTimers();
+  stopCallAudio();
+  resetRoomTelephoneSequence();
+  setStoryState("city-entering");
+  announceCallStatus("The billboard flashes. Love World spreads into the city.");
+
+  scheduleCallStep(() => {
+    if (archiveState !== "city-entering") {
+      return;
+    }
+
+    setStoryState("trend-city");
+    announceCallStatus("Love World trend archive. City spread observed.");
+  }, prefersReducedMotion.matches ? 60 : 2200);
+}
+
+function returnToTrendRoom() {
+  clearCallTimers();
+  stopCallAudio();
+  resetRoomTelephoneSequence();
+  setStoryState("trend-room");
+  scheduleRoomTelephoneRing(prefersReducedMotion.matches ? 100 : 900);
+  announceCallStatus("Observation may continue through the window.");
+}
+
+function returnToLoveResult() {
+  clearCallTimers();
+  stopCallAudio();
+  resetRoomTelephoneSequence();
+  setCallState("love-result");
+  if (callSequence) {
+    callSequence.tabIndex = 0;
+  }
+  announceCallStatus("Your love type is unconfirmed. No action is required.");
 }
 
 function showRecordedCallState() {
@@ -1057,9 +1415,6 @@ function continueCallSequence() {
     return;
   }
 
-  if (callAdvanceMode === "to-news" && archiveState === "love-broadcast") {
-    showLoveNews();
-  }
 }
 
 function startCallSequence() {
@@ -1069,6 +1424,7 @@ function startCallSequence() {
 
   clearCallTimers();
   stopCallAudio();
+  stopBroadcastAdMedia();
   setCallState("call-dialing");
   setBroadcastCallDisabled(true);
 
@@ -1253,19 +1609,82 @@ for (const button of doctrineCloserButtons) {
   });
 }
 
+if (broadcastCamera) {
+  broadcastCamera.addEventListener("animationend", (event) => {
+    if (event.animationName === "broadcastAdTuneIn") {
+      completeBroadcast();
+    }
+  });
+}
+
 for (const button of broadcastCallButtons) {
   button.addEventListener("click", startCallSequence);
 }
 
+if (broadcastAdVideo) {
+  broadcastAdVideo.addEventListener("playing", () => {
+    intro.classList.add("is-broadcast-video-ready");
+  });
+  broadcastAdVideo.addEventListener("error", () => {
+    intro.classList.remove("is-broadcast-video-ready");
+  });
+  broadcastAdVideo.addEventListener("emptied", () => {
+    intro.classList.remove("is-broadcast-video-ready");
+  });
+}
+
 if (callSequence) {
-  callSequence.addEventListener("click", continueCallSequence);
+  callSequence.addEventListener("click", () => {
+    if (archiveState === "love-weekly") {
+      showLoveResult();
+      return;
+    }
+
+    if (archiveState === "love-result") {
+      startRoomReveal();
+      return;
+    }
+
+    continueCallSequence();
+  });
   callSequence.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") {
       return;
     }
 
     event.preventDefault();
+
+    if (archiveState === "love-result") {
+      startRoomReveal();
+      return;
+    }
+
     continueCallSequence();
+  });
+}
+
+if (roomAdvanceButton) {
+  roomAdvanceButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    startCityTransition();
+  });
+}
+
+for (const button of globalNavButtons) {
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const destination = button.dataset.destination;
+
+    if (!destination) {
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent("loveworld:navigate", {
+      detail: {
+        destination,
+        fromState: archiveState,
+      },
+    }));
   });
 }
 
@@ -1275,6 +1694,13 @@ if (callAdvanceButton) {
 
 if (callMuteButton) {
   callMuteButton.addEventListener("click", toggleCallMute);
+}
+
+for (const choice of loveWeeklyChoices) {
+  choice.addEventListener("click", (event) => {
+    event.stopPropagation();
+    showLoveResult();
+  });
 }
 
 resetCallSequence();
