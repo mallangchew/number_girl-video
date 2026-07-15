@@ -22,6 +22,7 @@ const callLiveStatus = document.querySelector(".call-live-status");
 const loveWeeklyChoices = document.querySelectorAll("[data-love-type]");
 const roomScene = document.querySelector(".story-scene--room");
 const cityScene = document.querySelector(".story-scene--city");
+const friendsScene = document.querySelector(".story-scene--friends");
 const roomAdvanceButton = document.querySelector(".story-scene__advance");
 const globalNavButtons = document.querySelectorAll(".archive-global-nav__button[data-destination]");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -55,7 +56,7 @@ const archiveTimers = [];
 const callTimers = [];
 const callAudioNodes = new Set();
 const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news", "is-trend-interviews", "is-love-weekly", "is-love-result"];
-const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city"];
+const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city", "is-trend-friends", "is-story-ended"];
 const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
@@ -482,6 +483,7 @@ function updateCallLayerAccessibility(activeLayer) {
 function updateStorySceneAccessibility(state) {
   const isRoomVisible = ["room-revealing", "trend-room", "city-entering"].includes(state);
   const isCityVisible = ["city-entering", "trend-city"].includes(state);
+  const isFriendsVisible = ["trend-friends", "story-ended"].includes(state);
 
   if (roomScene) {
     roomScene.setAttribute("aria-hidden", String(!isRoomVisible));
@@ -491,6 +493,11 @@ function updateStorySceneAccessibility(state) {
   if (cityScene) {
     cityScene.setAttribute("aria-hidden", String(!isCityVisible));
     cityScene.inert = !isCityVisible;
+  }
+
+  if (friendsScene) {
+    friendsScene.setAttribute("aria-hidden", String(!isFriendsVisible));
+    friendsScene.inert = !isFriendsVisible;
   }
 
   if (roomAdvanceButton) {
@@ -605,6 +612,41 @@ function playRingCue() {
     overtone.stop(now + 0.54);
     trackCallAudioNode(lowTone);
     trackCallAudioNode(overtone);
+  } catch {}
+}
+
+function playCameraShutter() {
+  if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
+    return;
+  }
+
+  try {
+    const now = callAudioContext.currentTime;
+    const sampleRate = callAudioContext.sampleRate;
+    const buffer = callAudioContext.createBuffer(1, Math.floor(sampleRate * 0.12), sampleRate);
+    const samples = buffer.getChannelData(0);
+    const shutter = callAudioContext.createBufferSource();
+    const shutterFilter = callAudioContext.createBiquadFilter();
+    const shutterGain = callAudioContext.createGain();
+
+    for (let index = 0; index < samples.length; index += 1) {
+      const decay = Math.exp(-index / (sampleRate * 0.022));
+      samples[index] = (Math.random() * 2 - 1) * decay;
+    }
+
+    shutter.buffer = buffer;
+    shutterFilter.type = "bandpass";
+    shutterFilter.frequency.value = 2200;
+    shutterFilter.Q.value = 0.9;
+    shutterGain.gain.setValueAtTime(0.0001, now);
+    shutterGain.gain.exponentialRampToValueAtTime(0.11, now + 0.004);
+    shutterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+    shutter.connect(shutterFilter);
+    shutterFilter.connect(shutterGain);
+    shutterGain.connect(callAudioGain);
+    shutter.start(now);
+    shutter.stop(now + 0.12);
+    trackCallAudioNode(shutter);
   } catch {}
 }
 
@@ -1103,6 +1145,11 @@ function returnToDoctrineFromBroadcast() {
 }
 
 function goBack() {
+  if (archiveState === "trend-friends" || archiveState === "story-ended") {
+    returnToTrendCity();
+    return;
+  }
+
   if (archiveState === "trend-city" || archiveState === "city-entering") {
     returnToTrendRoom();
     return;
@@ -1368,7 +1415,39 @@ function startCityTransition() {
 
     setStoryState("trend-city");
     announceCallStatus("Love World trend archive. City spread observed.");
+
+    scheduleCallStep(() => {
+      if (archiveState !== "trend-city" || !friendsScene) {
+        return;
+      }
+
+      setStoryState("trend-friends");
+      announceCallStatus("Friends leave a neighborhood Love World event. One last charm is added before the photograph.");
+
+      scheduleCallStep(() => {
+        if (archiveState === "trend-friends") {
+          playCameraShutter();
+        }
+      }, prefersReducedMotion.matches ? 540 : 6700);
+
+      scheduleCallStep(() => {
+        if (archiveState !== "trend-friends") {
+          return;
+        }
+
+        setStoryState("story-ended");
+        announceCallStatus("The neighborhood trend archive ends on the photograph.");
+      }, prefersReducedMotion.matches ? 900 : 7600);
+    }, prefersReducedMotion.matches ? 600 : 3200);
   }, prefersReducedMotion.matches ? 60 : 2200);
+}
+
+function returnToTrendCity() {
+  clearCallTimers();
+  stopCallAudio();
+  resetRoomTelephoneSequence();
+  setStoryState("trend-city");
+  announceCallStatus("Love World trend archive. City spread observed.");
 }
 
 function returnToTrendRoom() {
