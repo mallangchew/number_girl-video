@@ -3,18 +3,22 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Love Cult Archive Intro - Landscape</title>
+    <title>LOVE WORLD</title>
     <link rel="icon" href="data:,">
     <link rel="preload" as="video" href="assets/love-world-ad.mp4" type="video/mp4">
     <link rel="preload" as="audio" href="assets/love-world-ad-audio.mp4" type="video/mp4">
     <link rel="preload" as="video" href="assets/love-world-news.mp4" type="video/mp4">
     <link rel="preload" as="image" href="assets/love-room-reveal-camcorder-v1.webp" type="image/webp">
     <link rel="preload" as="image" href="assets/love-city-trend-camcorder-v2.png" type="image/png">
-    <link rel="preload" as="image" href="assets/love-friends-after-event-camcorder-v2.png" type="image/png">
-    <link rel="stylesheet" href="styles.css?v=20260715friends-event5">
+    <link rel="preload" as="image" href="assets/love-world-parking-lot-exclusion-v1.png" type="image/png">
+    <link rel="preload" as="image" href="assets/love-world-propaganda-static-v1.webp" type="image/webp">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500&amp;display=swap">
+    <link rel="stylesheet" href="styles.css?v=20260717parking1">
   </head>
   <body>
-    <main class="archive-intro archive-intro--wide" data-layout="wide-duo" aria-label="Animated mirrored archive intro">
+    <main class="archive-intro archive-intro--wide" data-layout="wide-duo" aria-label="LOVE WORLD interactive broadcast">
       <img
         class="angel-art"
         src="assets/angel-archive-closeup.png"
@@ -26,7 +30,7 @@
         <p class="archive-title__main">is your love heaven or hell?</p>
       </div>
       <button class="archive-title__sub archive-enter" type="button">enter</button>
-      <section class="prologue-scene" aria-label="Archive prologue" aria-hidden="true">
+      <section class="prologue-scene" aria-label="LOVE WORLD prologue" aria-hidden="true">
         <img
           class="prologue-scene__image"
           src="assets/pirate-archive-prologue.png"
@@ -56,7 +60,7 @@
           aria-hidden="true"
         >
         <div class="doctrine-panel">
-          <p class="doctrine-kicker">LOVE WORLD / RECORD 001</p>
+          <p class="doctrine-kicker">LOVE WORLD / BROADCAST 001</p>
           <h1 class="doctrine-title">love: heaven or hell?</h1>
           <p class="doctrine-copy">
             <span>if you do not know,</span>
@@ -94,7 +98,6 @@
               class="broadcast-ad__video"
               src="assets/love-world-ad.mp4"
               muted
-              loop
               playsinline
               preload="auto"
               aria-hidden="true"
@@ -102,7 +105,6 @@
             <audio
               class="broadcast-ad__audio"
               src="assets/love-world-ad-audio.mp4"
-              loop
               preload="auto"
               aria-hidden="true"
             ></audio>
@@ -113,7 +115,7 @@
           <div class="call-sequence" aria-hidden="true">
             <section class="call-sequence__layer call-sequence__layer--dialing" data-call-layer="call-dialing" aria-hidden="true">
               <p class="call-sequence__signal">CALLING...</p>
-              <p class="call-sequence__record">ARCHIVE SUBJECT 001</p>
+              <p class="call-sequence__record">LIVE CALL / LINE 001</p>
               <p class="call-sequence__subject">THE GIRL</p>
               <div class="call-sequence__rings" aria-hidden="true">
                 <span></span><span></span><span></span>
@@ -123,27 +125,13 @@
               <div class="call-dialogue" aria-label="The girl's interrupted response">
                 <p class="call-dialogue__line call-dialogue__line--1">hello?</p>
                 <p class="call-dialogue__line call-dialogue__line--2">...</p>
-                <p class="call-dialogue__line call-dialogue__line--3">did they tell you<br>i wished for everyone?</p>
-                <p class="call-dialogue__line call-dialogue__line--4">i only—</p>
+                <p class="call-dialogue__line call-dialogue__line--3">are you watching?</p>
+                <p class="call-dialogue__line call-dialogue__line--4">they said i wished for—</p>
               </div>
             </section>
-            <section class="call-sequence__layer call-sequence__layer--recorded" data-call-layer="caller-recorded" aria-hidden="true">
-              <p class="call-recorded__signal">SIGNAL LOST</p>
-              <p class="call-recorded__thanks">thank you for calling.<br>your interest in love<br>has been recorded.</p>
-              <dl class="call-recorded__status">
-                <div><dt>love status:</dt><dd>curious</dd></div>
-                <div><dt>faith level:</dt><dd>unconfirmed</dd></div>
-                <div><dt>contact attempts:</dt><dd>1</dd></div>
-              </dl>
-            </section>
-            <section class="call-sequence__layer call-sequence__layer--final" data-call-layer="love-broadcast" aria-hidden="true">
-              <img
-                class="call-final__banner"
-                src="assets/love-popup-80s-saranghaseyo-banner.png"
-                alt="사랑하세요~ 모두 사랑하세요~"
-                width="720"
-                height="144"
-              >
+            <section class="call-sequence__layer call-sequence__layer--ended" data-call-layer="call-ended" aria-hidden="true">
+              <p class="call-ended__signal">SIGNAL LOST</p>
+              <p class="call-ended__thanks">thank you for calling.<br>have a lovely day.</p>
             </section>
             <section class="call-sequence__layer call-sequence__layer--news" data-call-layer="love-news" aria-hidden="true">
               <video
@@ -250,29 +238,54 @@
             <div class="story-camcorder__bar"></div>
           </div>
         </section>
-        <section class="story-scene story-scene--friends" aria-label="Friends leave a Love World neighborhood event" aria-hidden="true">
+        <section class="story-scene story-scene--friends" aria-label="One person is left behind as four friends leave a Love World event" aria-hidden="true">
           <img
             class="story-scene__image story-scene__image--friends"
-            src="assets/love-friends-after-event-camcorder-v2.png"
-            alt="쇼핑몰 앞에서 웃는 친구들이 마지막 한 사람의 옷에 같은 사랑 부적을 달아주며 기다린다"
+            src="assets/love-world-parking-lot-exclusion-v1.png"
+            alt="1990년대 미국 쇼핑몰 주차장에서 부적을 단 네 친구가 멀어지고 부적이 없는 파란 재킷의 한 사람이 홀로 남아 바라본다"
             width="1672"
             height="941"
           >
-          <p class="story-friends__subtitle story-friends__subtitle--hold" aria-hidden="true">- hold on. you forgot yours.</p>
-          <p class="story-friends__subtitle story-friends__subtitle--ready" aria-hidden="true">- okay, now.</p>
-          <div class="story-friends__flash" aria-hidden="true"></div>
-          <div class="story-friends__blackout" aria-hidden="true"></div>
           <div class="story-camcorder" aria-hidden="true">
             <div class="story-camcorder__noise"></div>
             <div class="story-camcorder__bar"></div>
           </div>
         </section>
+        <section class="story-scene story-scene--flyer" aria-label="The parking-lot image freezes into a Love World community broadcast" aria-hidden="true">
+          <img
+            class="story-propaganda__image"
+            src="assets/love-world-parking-lot-exclusion-v1.png"
+            alt=""
+            aria-hidden="true"
+            width="1672"
+            height="941"
+          >
+          <div class="story-propaganda__texture" aria-hidden="true"></div>
+          <div class="story-propaganda__shade" aria-hidden="true"></div>
+          <div class="story-propaganda__copy">
+            <p class="story-propaganda__kicker">love world community</p>
+            <h2 class="story-propaganda__headline"><span>everyone belongs</span><span>in love</span></h2>
+            <div class="story-propaganda__warning" aria-live="polite">
+              <p class="story-propaganda__service">a public service message from love world</p>
+              <p class="story-propaganda__warning-first">loneliness is not permitted</p>
+              <p class="story-propaganda__warning-final">non-lovers will be corrected</p>
+            </div>
+          </div>
+          <div class="story-propaganda__static" aria-hidden="true">
+            <div class="story-propaganda__static-field"></div>
+            <div class="story-propaganda__static-snow"></div>
+            <div class="story-propaganda__static-bar"></div>
+            <div class="story-propaganda__static-scanlines"></div>
+          </div>
+          <div class="story-propaganda__burst" aria-hidden="true"></div>
+        </section>
+        <p class="broadcast-media-subtitle" aria-hidden="true"></p>
         <button class="broadcast-subtitle-call" type="button" aria-label="Call her">- call her</button>
         <button class="call-advance-outside" type="button" aria-label="Continue call sequence" hidden>click to continue</button>
         <button class="call-mute" type="button" aria-label="Mute call audio" aria-pressed="false" hidden>MUTE</button>
         <p class="call-live-status visually-hidden" aria-live="polite" aria-atomic="true"></p>
       </section>
-      <nav class="doctrine-nav archive-global-nav" aria-label="Archive categories">
+      <nav class="doctrine-nav archive-global-nav" aria-label="LOVE WORLD categories">
         <span class="doctrine-nav__item doctrine-nav__item--active" aria-current="page">LOVE WORLD</span>
         <button class="doctrine-nav__item archive-global-nav__button" type="button" data-destination="shop">SHOP</button>
         <button class="doctrine-nav__item archive-global-nav__button" type="button" data-destination="notice">NOTICE</button>
@@ -284,6 +297,6 @@
       <div class="paper-noise" aria-hidden="true"></div>
     </main>
     <script src="mask-data.js?v=20260709s"></script>
-    <script src="script.js?v=20260715friends-event5"></script>
+    <script src="script.js?v=20260717parking1"></script>
   </body>
 </html>

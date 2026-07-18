@@ -13,6 +13,7 @@ const broadcastCamera = document.querySelector(".broadcast-camera");
 const broadcastAdVideo = document.querySelector(".broadcast-ad__video");
 const broadcastAdAudio = document.querySelector(".broadcast-ad__audio");
 const newsVideo = document.querySelector(".call-news__video");
+const broadcastMediaSubtitle = document.querySelector(".broadcast-media-subtitle");
 const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
 const callSequence = document.querySelector(".call-sequence");
 const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
@@ -23,10 +24,12 @@ const loveWeeklyChoices = document.querySelectorAll("[data-love-type]");
 const roomScene = document.querySelector(".story-scene--room");
 const cityScene = document.querySelector(".story-scene--city");
 const friendsScene = document.querySelector(".story-scene--friends");
+const flyerScene = document.querySelector(".story-scene--flyer");
 const roomAdvanceButton = document.querySelector(".story-scene__advance");
 const cityAdvanceButton = document.querySelector(".story-scene__city-advance");
 const globalNavButtons = document.querySelectorAll(".archive-global-nav__button[data-destination]");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const isPropagandaPreview = new URLSearchParams(window.location.search).get("preview") === "propaganda";
 
 const layout = intro?.dataset.layout || "portrait";
 const isWideDuo = layout === "wide-duo";
@@ -56,13 +59,35 @@ const maxFrameMs = 1000 / 24;
 const archiveTimers = [];
 const callTimers = [];
 const callAudioNodes = new Set();
-const callStateClasses = ["is-call-dialing", "is-call-answered", "is-caller-recorded", "is-love-broadcast", "is-love-news", "is-trend-interviews", "is-love-weekly", "is-love-result"];
-const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city", "is-trend-friends", "is-story-ended"];
+const callStateClasses = ["is-call-dialing", "is-call-answered", "is-call-ended", "is-love-news", "is-trend-interviews", "is-love-weekly", "is-love-result"];
+const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city", "is-trend-friends", "is-story-ended", "is-coercion-flyer", "is-coercion-final"];
 const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
-const callRecordedLockMs = 900;
+const callEndedLockMs = 900;
 const roomRingIntervals = [3300, 5200, 4100, 6800];
+const newsSubtitleCues = [
+  {
+    start: 0,
+    end: 6.24,
+    text: "- 요즘 전국을 휩쓸고 있는 건\n단순한 유행이 아닙니다\n사랑을 향한 하나의 움직임이죠",
+  },
+  {
+    start: 7.05,
+    end: 10.95,
+    text: "- 전문가들은 사랑의 부적을 다는 것이\n단순한 멋내기 이상의 의미를 지닌다고 말합니다",
+  },
+  {
+    start: 11.38,
+    end: 14.44,
+    text: "- 마음으로 통하는 모두의 언어를\n받아들이는 일이라는 겁니다",
+  },
+];
+const adSubtitleCues = [
+  { start: 9.9, end: 11.96, text: "- 사랑의 힘을 느껴보세요" },
+  { start: 12.42, end: 12.98, text: "- 언제든 좋아요" },
+  { start: 13.24, end: 13.94, text: "- 지금 전화주세요" },
+];
 let archiveState = "idle";
 let hasEnteredArchive = false;
 let ritualStartedFrame = 0;
@@ -71,6 +96,7 @@ let callAudioGain = null;
 let isCallMuted = false;
 let callAdvanceMode = null;
 let roomRingCount = 0;
+let isOpeningBroadcastRunning = false;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
@@ -485,6 +511,7 @@ function updateStorySceneAccessibility(state) {
   const isRoomVisible = ["room-revealing", "trend-room", "city-entering"].includes(state);
   const isCityVisible = ["city-entering", "trend-city"].includes(state);
   const isFriendsVisible = ["trend-friends", "story-ended"].includes(state);
+  const isFlyerVisible = ["coercion-flyer", "coercion-final"].includes(state);
 
   if (roomScene) {
     roomScene.setAttribute("aria-hidden", String(!isRoomVisible));
@@ -499,6 +526,11 @@ function updateStorySceneAccessibility(state) {
   if (friendsScene) {
     friendsScene.setAttribute("aria-hidden", String(!isFriendsVisible));
     friendsScene.inert = !isFriendsVisible;
+  }
+
+  if (flyerScene) {
+    flyerScene.setAttribute("aria-hidden", String(!isFlyerVisible));
+    flyerScene.inert = !isFlyerVisible;
   }
 
   if (roomAdvanceButton) {
@@ -620,7 +652,7 @@ function playRingCue() {
   } catch {}
 }
 
-function playCameraShutter() {
+function playParkingLotAmbience(duration = 3.2) {
   if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
     return;
   }
@@ -628,30 +660,97 @@ function playCameraShutter() {
   try {
     const now = callAudioContext.currentTime;
     const sampleRate = callAudioContext.sampleRate;
-    const buffer = callAudioContext.createBuffer(1, Math.floor(sampleRate * 0.12), sampleRate);
-    const samples = buffer.getChannelData(0);
-    const shutter = callAudioContext.createBufferSource();
-    const shutterFilter = callAudioContext.createBiquadFilter();
-    const shutterGain = callAudioContext.createGain();
+    const ambienceBuffer = callAudioContext.createBuffer(1, Math.ceil(sampleRate * duration), sampleRate);
+    const ambienceSamples = ambienceBuffer.getChannelData(0);
+    const ambience = callAudioContext.createBufferSource();
+    const ambienceFilter = callAudioContext.createBiquadFilter();
+    const ambienceGain = callAudioContext.createGain();
+    const parkingHum = callAudioContext.createOscillator();
+    const parkingHumGain = callAudioContext.createGain();
 
-    for (let index = 0; index < samples.length; index += 1) {
-      const decay = Math.exp(-index / (sampleRate * 0.022));
-      samples[index] = (Math.random() * 2 - 1) * decay;
+    let smoothedNoise = 0;
+    for (let index = 0; index < ambienceSamples.length; index += 1) {
+      smoothedNoise = smoothedNoise * 0.985 + (Math.random() * 2 - 1) * 0.015;
+      ambienceSamples[index] = smoothedNoise;
     }
 
-    shutter.buffer = buffer;
-    shutterFilter.type = "bandpass";
-    shutterFilter.frequency.value = 2200;
-    shutterFilter.Q.value = 0.9;
-    shutterGain.gain.setValueAtTime(0.0001, now);
-    shutterGain.gain.exponentialRampToValueAtTime(0.11, now + 0.004);
-    shutterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-    shutter.connect(shutterFilter);
-    shutterFilter.connect(shutterGain);
-    shutterGain.connect(callAudioGain);
-    shutter.start(now);
-    shutter.stop(now + 0.12);
-    trackCallAudioNode(shutter);
+    ambience.buffer = ambienceBuffer;
+    ambienceFilter.type = "lowpass";
+    ambienceFilter.frequency.value = 720;
+    ambienceFilter.Q.value = 0.45;
+    ambienceGain.gain.setValueAtTime(0.0001, now);
+    ambienceGain.gain.exponentialRampToValueAtTime(0.016, now + 0.12);
+    ambienceGain.gain.setValueAtTime(0.013, now + Math.max(0.2, duration - 0.42));
+    ambienceGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    ambience.connect(ambienceFilter);
+    ambienceFilter.connect(ambienceGain);
+    ambienceGain.connect(callAudioGain);
+
+    parkingHum.type = "sine";
+    parkingHum.frequency.value = 58;
+    parkingHumGain.gain.setValueAtTime(0.0001, now);
+    parkingHumGain.gain.exponentialRampToValueAtTime(0.006, now + 0.18);
+    parkingHumGain.gain.setValueAtTime(0.005, now + Math.max(0.3, duration - 0.5));
+    parkingHumGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    parkingHum.connect(parkingHumGain);
+    parkingHumGain.connect(callAudioGain);
+
+    ambience.start(now);
+    ambience.stop(now + duration);
+    parkingHum.start(now);
+    parkingHum.stop(now + duration);
+    trackCallAudioNode(ambience);
+    trackCallAudioNode(parkingHum);
+
+    ambience.addEventListener("ended", () => {
+      try {
+        ambienceFilter.disconnect();
+        ambienceGain.disconnect();
+      } catch {}
+    }, { once: true });
+
+    parkingHum.addEventListener("ended", () => {
+      try {
+        parkingHumGain.disconnect();
+      } catch {}
+    }, { once: true });
+
+    const footstepOffsets = [0.34, 0.84, 1.36, 1.91, 2.5];
+    footstepOffsets.forEach((offset, stepIndex) => {
+      const stepDuration = 0.15;
+      const stepBuffer = callAudioContext.createBuffer(1, Math.ceil(sampleRate * stepDuration), sampleRate);
+      const stepSamples = stepBuffer.getChannelData(0);
+      const step = callAudioContext.createBufferSource();
+      const stepFilter = callAudioContext.createBiquadFilter();
+      const stepGain = callAudioContext.createGain();
+      const stepPeak = 0.028 * (1 - stepIndex * 0.13);
+
+      for (let index = 0; index < stepSamples.length; index += 1) {
+        const decay = Math.exp(-index / (sampleRate * 0.035));
+        stepSamples[index] = (Math.random() * 2 - 1) * decay;
+      }
+
+      step.buffer = stepBuffer;
+      stepFilter.type = "bandpass";
+      stepFilter.frequency.value = 170 - stepIndex * 7;
+      stepFilter.Q.value = 0.72;
+      stepGain.gain.setValueAtTime(0.0001, now + offset);
+      stepGain.gain.exponentialRampToValueAtTime(stepPeak, now + offset + 0.008);
+      stepGain.gain.exponentialRampToValueAtTime(0.0001, now + offset + stepDuration);
+      step.connect(stepFilter);
+      stepFilter.connect(stepGain);
+      stepGain.connect(callAudioGain);
+      step.start(now + offset);
+      step.stop(now + offset + stepDuration);
+      trackCallAudioNode(step);
+
+      step.addEventListener("ended", () => {
+        try {
+          stepFilter.disconnect();
+          stepGain.disconnect();
+        } catch {}
+      }, { once: true });
+    });
   } catch {}
 }
 
@@ -835,14 +934,47 @@ function playNewsPowerAudio() {
   } catch {}
 }
 
+function setBroadcastMediaSubtitle(text = "") {
+  const hasText = Boolean(text);
+
+  intro.classList.toggle("has-media-subtitle", hasText);
+
+  if (!broadcastMediaSubtitle) {
+    return;
+  }
+
+  broadcastMediaSubtitle.textContent = text;
+  broadcastMediaSubtitle.setAttribute("aria-hidden", String(!hasText));
+}
+
+function updateNewsSubtitle() {
+  if (!newsVideo || !isOpeningBroadcastRunning || archiveState !== "love-news") {
+    return;
+  }
+
+  const cue = newsSubtitleCues.find(({ start, end }) => newsVideo.currentTime >= start && newsVideo.currentTime < end);
+  setBroadcastMediaSubtitle(cue?.text || "");
+}
+
+function updateAdSubtitle() {
+  if (!broadcastAdVideo || !isOpeningBroadcastRunning || archiveState !== "broadcast") {
+    return;
+  }
+
+  const cue = adSubtitleCues.find(({ start, end }) => broadcastAdVideo.currentTime >= start && broadcastAdVideo.currentTime < end);
+  setBroadcastMediaSubtitle(cue?.text || "");
+}
+
 function resetCallSequence() {
   clearCallTimers();
   stopCallAudio();
   resetRoomTelephoneSequence();
+  isOpeningBroadcastRunning = false;
   stopBroadcastAdMedia();
   stopNewsVideo();
+  setBroadcastMediaSubtitle();
   setCallAdvanceMode(null);
-  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on", "is-broadcast-video-ready");
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on", "is-broadcast-video-ready", "is-opening-broadcast");
   updateCallLayerAccessibility(null);
   updateStorySceneAccessibility(null);
   setBroadcastCallDisabled(archiveState !== "broadcast");
@@ -867,6 +999,35 @@ function stopBroadcastAdMedia() {
   }
 }
 
+function showBroadcastAdFinalFrame() {
+  if (broadcastAdAudio) {
+    broadcastAdAudio.pause();
+  }
+
+  if (!broadcastAdVideo) {
+    return;
+  }
+
+  broadcastAdVideo.pause();
+  broadcastAdVideo.muted = true;
+  broadcastAdVideo.loop = false;
+
+  const seekToFinalFrame = () => {
+    if (!Number.isFinite(broadcastAdVideo.duration) || broadcastAdVideo.duration <= 0) {
+      return;
+    }
+
+    try {
+      broadcastAdVideo.currentTime = Math.max(0, broadcastAdVideo.duration - 0.08);
+    } catch {}
+  };
+
+  seekToFinalFrame();
+  window.requestAnimationFrame(seekToFinalFrame);
+
+  intro.classList.add("is-broadcast-video-ready");
+}
+
 function stopNewsVideo() {
   if (!newsVideo) {
     return;
@@ -880,25 +1041,32 @@ function stopNewsVideo() {
 
 function playNewsVideo() {
   if (!newsVideo) {
-    return;
+    return Promise.reject(new Error("News video is unavailable."));
   }
 
   try {
     newsVideo.currentTime = 0;
   } catch {}
-  newsVideo.play().catch(() => {});
+  newsVideo.loop = false;
+  return newsVideo.play();
 }
 
 function playBroadcastAdMedia() {
+  let videoPlayback = Promise.resolve();
+
   if (broadcastAdVideo) {
     try {
       broadcastAdVideo.currentTime = 0;
     } catch {}
 
     broadcastAdVideo.muted = true;
-    broadcastAdVideo.play()
+    broadcastAdVideo.loop = false;
+    videoPlayback = broadcastAdVideo.play()
       .then(() => intro.classList.add("is-broadcast-video-ready"))
-      .catch(() => intro.classList.remove("is-broadcast-video-ready"));
+      .catch((error) => {
+        intro.classList.remove("is-broadcast-video-ready");
+        throw error;
+      });
   }
 
   if (broadcastAdAudio) {
@@ -906,8 +1074,11 @@ function playBroadcastAdMedia() {
       broadcastAdAudio.currentTime = 0;
     } catch {}
 
+    broadcastAdAudio.loop = false;
     broadcastAdAudio.play().catch(() => {});
   }
+
+  return videoPlayback;
 }
 
 function scheduleArchiveStep(callback, delay) {
@@ -1150,7 +1321,12 @@ function returnToDoctrineFromBroadcast() {
 }
 
 function goBack() {
-  if (archiveState === "trend-friends" || archiveState === "story-ended") {
+  if (isOpeningBroadcastRunning) {
+    returnToDoctrineFromBroadcast();
+    return;
+  }
+
+  if (["trend-friends", "story-ended", "coercion-flyer", "coercion-final"].includes(archiveState)) {
     returnToTrendCity();
     return;
   }
@@ -1165,7 +1341,7 @@ function goBack() {
     return;
   }
 
-  if (["call-dialing", "call-answered", "caller-recorded", "love-broadcast", "love-news", "trend-interviews", "love-weekly", "love-result"].includes(archiveState)) {
+  if (["call-dialing", "call-answered", "call-ended", "love-news", "trend-interviews", "love-weekly", "love-result"].includes(archiveState)) {
     returnToOriginalBroadcast();
     return;
   }
@@ -1240,82 +1416,94 @@ function completeBroadcast() {
   intro.classList.remove("is-broadcast-entering", "is-doctrine");
   intro.classList.add("is-broadcast");
   setBroadcastCallDisabled(true);
-  playBroadcastAdMedia();
-  scheduleArchiveStep(() => {
-    if (archiveState === "broadcast") {
-      setBroadcastCallDisabled(false);
-    }
-  }, 1300);
 
   if (doctrineScene) {
     doctrineScene.setAttribute("aria-hidden", "true");
   }
+
+  startOpeningNews();
 }
 
 function returnToOriginalBroadcast() {
   resetCallSequence();
   archiveState = "broadcast";
-  setBroadcastCallDisabled(true);
+  setBroadcastCallDisabled(false);
   intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-broadcast-power-cut", "is-broadcast-power-on");
   intro.classList.add("is-broadcast");
-  playBroadcastAdMedia();
-  scheduleArchiveStep(() => {
-    if (archiveState === "broadcast") {
-      setBroadcastCallDisabled(false);
-    }
-  }, 1300);
-  announceCallStatus("Call cancelled. Original broadcast restored.");
+  showBroadcastAdFinalFrame();
+  announceCallStatus("Call cancelled. LOVE WORLD broadcast restored.");
 }
 
-function finishCallSequence() {
-  clearCallTimers();
-  stopCallAudio();
+function startOpeningNews() {
+  isOpeningBroadcastRunning = true;
   setCallAdvanceMode(null);
-  setCallState("love-broadcast");
+  clearCallTimers();
+  intro.classList.add("is-opening-broadcast");
+  setCallState("love-news");
   setBroadcastCallDisabled(true);
+  announceCallStatus("LOVE WORLD news broadcast.");
+  updateNewsSubtitle();
 
-  if (callMuteButton) {
-    callMuteButton.hidden = true;
+  playNewsVideo().catch(() => {
+    scheduleCallStep(() => {
+      if (isOpeningBroadcastRunning && archiveState === "love-news") {
+        transitionOpeningNewsToAd();
+      }
+    }, 1200);
+  });
+}
+
+function transitionOpeningNewsToAd() {
+  if (!isOpeningBroadcastRunning || archiveState !== "love-news") {
+    return;
   }
 
-  announceCallStatus("Love broadcast. 사랑하세요. 모두 사랑하세요.");
-  scheduleCallStep(() => {
-    if (archiveState === "love-broadcast") {
-      showLoveNews();
-    }
-  }, 3200);
-}
-
-function showLoveNews() {
-  setCallAdvanceMode(null);
-  clearCallTimers();
+  newsVideo?.pause();
+  setBroadcastMediaSubtitle();
   intro.classList.add("is-broadcast-power-cut");
   playNewsPowerAudio();
-  announceCallStatus("Broadcast signal lost.");
+  announceCallStatus("The news broadcast has ended.");
 
   scheduleCallStep(() => {
-    setCallState("love-news");
-    intro.classList.add("is-broadcast-power-on");
-    playNewsVideo();
-    announceCallStatus("Love World news. Love trend spreads.");
-  }, 620);
-
-  scheduleCallStep(() => {
-    intro.classList.remove("is-broadcast-power-on");
-  }, 1320);
-
-  scheduleCallStep(() => {
-    if (archiveState === "love-news") {
-      showTrendInterviews();
+    if (!isOpeningBroadcastRunning) {
+      return;
     }
-  }, 15700);
+
+    stopNewsVideo();
+    setCallState("broadcast");
+    intro.classList.add("is-opening-broadcast");
+    setBroadcastCallDisabled(true);
+    announceCallStatus("LOVE CHARM advertisement.");
+    updateAdSubtitle();
+
+    playBroadcastAdMedia().catch(() => {
+      scheduleCallStep(() => {
+        if (isOpeningBroadcastRunning && archiveState === "broadcast") {
+          finishOpeningBroadcast();
+        }
+      }, 1200);
+    });
+  }, 620);
+}
+
+function finishOpeningBroadcast() {
+  if (!isOpeningBroadcastRunning || archiveState !== "broadcast") {
+    return;
+  }
+
+  isOpeningBroadcastRunning = false;
+  setBroadcastMediaSubtitle();
+  intro.classList.remove("is-opening-broadcast", "is-broadcast-power-cut", "is-broadcast-power-on");
+  showBroadcastAdFinalFrame();
+  setBroadcastCallDisabled(false);
+  announceCallStatus("The advertisement has ended. Call her.");
 }
 
 function showTrendInterviews() {
   setCallAdvanceMode(null);
   clearCallTimers();
   setCallState("trend-interviews");
-  announceCallStatus("Trend archive. Interview recording started.");
+  announceCallStatus("LOVE WORLD interviews begin.");
 
   scheduleCallStep(() => {
     if (archiveState === "trend-interviews") {
@@ -1419,7 +1607,7 @@ function startCityTransition() {
     }
 
     setStoryState("trend-city");
-    announceCallStatus("Love World trend archive. City spread observed. Look closer to continue.");
+    announceCallStatus("Love World has spread through the city. Look closer to continue.");
   }, prefersReducedMotion.matches ? 60 : 2200);
 }
 
@@ -1429,23 +1617,39 @@ function startFriendsEnding() {
   }
 
   clearCallTimers();
+  stopCallAudio();
   setStoryState("trend-friends");
-  announceCallStatus("Friends leave a neighborhood Love World event. One last charm is added before the photograph.");
-
-  scheduleCallStep(() => {
-    if (archiveState === "trend-friends") {
-      playCameraShutter();
-    }
-  }, prefersReducedMotion.matches ? 5500 : 7000);
+  playParkingLotAmbience();
+  announceCallStatus("Four friends wearing Love World charms walk away across a parking lot. One person without a charm remains behind.");
 
   scheduleCallStep(() => {
     if (archiveState !== "trend-friends") {
       return;
     }
 
-    setStoryState("story-ended");
-    announceCallStatus("The neighborhood trend archive ends on the photograph.");
-  }, prefersReducedMotion.matches ? 8500 : 10700);
+    playStaticCut();
+    setStoryState("coercion-flyer");
+    announceCallStatus("The parking-lot image freezes as a Love World public service broadcast. Everyone belongs in love.");
+  }, 3200);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "coercion-flyer") {
+      return;
+    }
+
+    playStaticCut();
+    announceCallStatus("Loneliness is not permitted.");
+  }, 8500);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "coercion-flyer") {
+      return;
+    }
+
+    playStaticCut();
+    setStoryState("coercion-final");
+    announceCallStatus("Love World community broadcast: Non-lovers will be corrected.");
+  }, 11000);
 }
 
 function returnToTrendCity() {
@@ -1453,7 +1657,7 @@ function returnToTrendCity() {
   stopCallAudio();
   resetRoomTelephoneSequence();
   setStoryState("trend-city");
-  announceCallStatus("Love World trend archive. City spread observed.");
+  announceCallStatus("Love World has spread through the city.");
 }
 
 function returnToTrendRoom() {
@@ -1476,27 +1680,33 @@ function returnToLoveResult() {
   announceCallStatus("Your love type is unconfirmed. No action is required.");
 }
 
-function showRecordedCallState() {
+function showCallEndedState() {
   setCallAdvanceMode(null);
-  setCallState("caller-recorded");
+  setCallState("call-ended");
   playStaticCut();
-  announceCallStatus("Signal lost. Your interest in love has been recorded. Love status curious. Faith level unconfirmed. Contact attempts one.");
+  stopCallAudio();
+
+  if (callMuteButton) {
+    callMuteButton.hidden = true;
+  }
+
+  announceCallStatus("Signal lost. Thank you for calling. Have a lovely day.");
   scheduleCallStep(() => {
-    if (archiveState === "caller-recorded") {
-      setCallAdvanceMode("to-final");
+    if (archiveState === "call-ended") {
+      setCallAdvanceMode("to-trend-interviews");
       announceCallStatus("Signal lost. Click to continue.");
     }
-  }, callRecordedLockMs);
+  }, callEndedLockMs);
 }
 
 function continueCallSequence() {
-  if (callAdvanceMode === "to-recorded" && archiveState === "call-answered") {
-    showRecordedCallState();
+  if (callAdvanceMode === "to-ended" && archiveState === "call-answered") {
+    showCallEndedState();
     return;
   }
 
-  if (callAdvanceMode === "to-final" && archiveState === "caller-recorded") {
-    finishCallSequence();
+  if (callAdvanceMode === "to-trend-interviews" && archiveState === "call-ended") {
+    showTrendInterviews();
     return;
   }
 
@@ -1509,7 +1719,7 @@ function startCallSequence() {
 
   clearCallTimers();
   stopCallAudio();
-  stopBroadcastAdMedia();
+  showBroadcastAdFinalFrame();
   setCallState("call-dialing");
   setBroadcastCallDisabled(true);
 
@@ -1521,7 +1731,7 @@ function startCallSequence() {
     window.requestAnimationFrame(() => callMuteButton.focus({ preventScroll: true }));
   }
 
-  announceCallStatus("Calling archive subject 001, the girl.");
+  announceCallStatus("Calling live line 001, the girl.");
   prepareCallAudio();
   playRingCue();
   scheduleCallStep(playRingCue, 850);
@@ -1529,12 +1739,12 @@ function startCallSequence() {
 
   scheduleCallStep(() => {
     setCallState("call-answered");
-    announceCallStatus("The girl answers: hello? Did they tell you I wished for everyone? I only—");
+    announceCallStatus("The girl answers: hello? Are you watching? They said I wished for—");
   }, callDialingMs);
 
   scheduleCallStep(() => {
     if (archiveState === "call-answered") {
-      setCallAdvanceMode("to-recorded");
+      setCallAdvanceMode("to-ended");
       announceCallStatus("The girl stops. Click to continue.");
     }
   }, callDialingMs + callAnsweredReadMs);
@@ -1707,14 +1917,30 @@ for (const button of broadcastCallButtons) {
 }
 
 if (broadcastAdVideo) {
+  broadcastAdVideo.addEventListener("timeupdate", updateAdSubtitle);
+  broadcastAdVideo.addEventListener("ended", finishOpeningBroadcast);
   broadcastAdVideo.addEventListener("playing", () => {
     intro.classList.add("is-broadcast-video-ready");
   });
   broadcastAdVideo.addEventListener("error", () => {
     intro.classList.remove("is-broadcast-video-ready");
+
+    if (isOpeningBroadcastRunning && archiveState === "broadcast") {
+      finishOpeningBroadcast();
+    }
   });
   broadcastAdVideo.addEventListener("emptied", () => {
     intro.classList.remove("is-broadcast-video-ready");
+  });
+}
+
+if (newsVideo) {
+  newsVideo.addEventListener("timeupdate", updateNewsSubtitle);
+  newsVideo.addEventListener("ended", transitionOpeningNewsToAd);
+  newsVideo.addEventListener("error", () => {
+    if (isOpeningBroadcastRunning && archiveState === "love-news") {
+      transitionOpeningNewsToAd();
+    }
   });
 }
 
@@ -1797,34 +2023,44 @@ for (const choice of loveWeeklyChoices) {
 
 resetCallSequence();
 
-function startLocalStoryPreview() {
-  const params = new URLSearchParams(window.location.search);
-
-  if (window.location.protocol !== "file:" || params.get("full") === "1") {
-    return;
-  }
-
-  clearArchiveTimers();
-  stopCallAudio();
+if (isPropagandaPreview && flyerScene) {
   hasEnteredArchive = true;
-  pointer.active = false;
-  enterButton.disabled = true;
-  intro.classList.add("is-broadcast");
-  prologueScene?.setAttribute("aria-hidden", "true");
-  doctrineScene?.setAttribute("aria-hidden", "true");
-  broadcastScene?.setAttribute("aria-hidden", "false");
-
-  if (broadcastScene) {
-    broadcastScene.inert = false;
-  }
+  intro.classList.add("is-broadcast", "is-propaganda-preview");
+  setStoryState("trend-friends");
 
   if (archiveBackButton) {
-    archiveBackButton.disabled = false;
+    archiveBackButton.disabled = true;
   }
 
-  setBroadcastCallDisabled(true);
-  setStoryState("trend-city");
-  announceCallStatus("Local preview. Love World city spread observed. Look closer to continue.");
-}
+  playParkingLotAmbience();
+  announceCallStatus("LOVE WORLD parking-lot preview. Four friends leave while one person remains behind.");
 
-startLocalStoryPreview();
+  scheduleCallStep(() => {
+    if (archiveState !== "trend-friends") {
+      return;
+    }
+
+    playStaticCut();
+    setStoryState("coercion-flyer");
+    announceCallStatus("The image freezes as a Love World public service broadcast. Everyone belongs in love.");
+  }, 3200);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "coercion-flyer") {
+      return;
+    }
+
+    playStaticCut();
+    announceCallStatus("Loneliness is not permitted.");
+  }, 8500);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "coercion-flyer") {
+      return;
+    }
+
+    playStaticCut();
+    setStoryState("coercion-final");
+    announceCallStatus("Love World community broadcast: Non-lovers will be corrected.");
+  }, 11000);
+}
