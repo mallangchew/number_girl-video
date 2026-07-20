@@ -4,6 +4,7 @@ const intro = document.querySelector(".archive-intro");
 const sourceImage = document.querySelector(".angel-art");
 const enterButton = document.querySelector(".archive-enter");
 const prologueScene = document.querySelector(".prologue-scene");
+const preBroadcastMyth = document.querySelector(".prebroadcast-myth");
 const archiveBackButton = document.querySelector(".archive-back");
 const prologueEntryButtons = document.querySelectorAll(".prologue-copy");
 const doctrineScene = document.querySelector(".doctrine-scene");
@@ -17,19 +18,41 @@ const broadcastMediaSubtitle = document.querySelector(".broadcast-media-subtitle
 const broadcastCallButtons = document.querySelectorAll(".broadcast-call-target, .broadcast-subtitle-call");
 const callSequence = document.querySelector(".call-sequence");
 const callSequenceLayers = document.querySelectorAll("[data-call-layer]");
+const interviewImages = document.querySelectorAll(".camcorder-frame__image");
+const interviewCaptions = document.querySelectorAll(".camcorder-caption");
 const callAdvanceButton = document.querySelector(".call-advance-outside");
 const callMuteButton = document.querySelector(".call-mute");
 const callLiveStatus = document.querySelector(".call-live-status");
-const loveWeeklyChoices = document.querySelectorAll("[data-love-type]");
 const roomScene = document.querySelector(".story-scene--room");
 const cityScene = document.querySelector(".story-scene--city");
+const cityMythCaption = document.querySelector(".story-scene__myth-caption--city");
 const friendsScene = document.querySelector(".story-scene--friends");
 const flyerScene = document.querySelector(".story-scene--flyer");
+const propagandaCaptionFirst = document.querySelector(".story-propaganda__caption--first");
+const mailboxScene = document.querySelector(".story-scene--mailbox");
+const mailboxMythCaption = document.querySelector(".story-scene__myth-caption--mailbox");
+const mailboxPrompt = document.querySelector(".story-mailbox__prompt");
+const mailboxNote = document.querySelector(".story-mailbox__note");
+const mailboxMemory = document.querySelector(".story-mailbox__memory");
+const mailboxImages = document.querySelectorAll(".story-mailbox__image");
+const wishPriceScene = document.querySelector(".story-scene--wish-price");
+const wishPriceLineOne = document.querySelector(".wish-price__line--one");
+const wishPriceLineTwo = document.querySelector(".wish-price__line--two");
+const wishPriceAdvance = document.querySelector(".wish-price__advance");
+const mailboxTargets = {
+  mailbox: document.querySelector(".story-mailbox__target--box"),
+  photo: document.querySelector(".story-mailbox__target--photo"),
+};
 const roomAdvanceButton = document.querySelector(".story-scene__advance");
 const cityAdvanceButton = document.querySelector(".story-scene__city-advance");
 const globalNavButtons = document.querySelectorAll(".archive-global-nav__button[data-destination]");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-const isPropagandaPreview = new URLSearchParams(window.location.search).get("preview") === "propaganda";
+const storyPreview = new URLSearchParams(window.location.search).get("preview");
+const isBridgePreview = storyPreview === "bridge";
+const isPropagandaPreview = storyPreview === "propaganda";
+const isMailboxPreview = storyPreview === "mailbox";
+const isWishPricePreview = storyPreview === "wish";
+const previewStateClasses = ["is-bridge-preview", "is-propaganda-preview", "is-mailbox-preview", "is-wish-preview"];
 
 const layout = intro?.dataset.layout || "portrait";
 const isWideDuo = layout === "wide-duo";
@@ -59,8 +82,9 @@ const maxFrameMs = 1000 / 24;
 const archiveTimers = [];
 const callTimers = [];
 const callAudioNodes = new Set();
-const callStateClasses = ["is-call-dialing", "is-call-answered", "is-call-ended", "is-love-news", "is-trend-interviews", "is-love-weekly", "is-love-result"];
-const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city", "is-trend-friends", "is-story-ended", "is-coercion-flyer", "is-coercion-final"];
+const callStateClasses = ["is-call-dialing", "is-call-answered", "is-call-ended", "is-love-news", "is-trend-interviews"];
+const storyStateClasses = ["is-tv-powering-off", "is-room-revealing", "is-trend-room", "is-city-entering", "is-trend-city", "is-trend-friends", "is-story-ended", "is-coercion-flyer", "is-coercion-final", "is-mailbox-closed", "is-mailbox-open", "is-mailbox-contents", "is-mailbox-back", "is-mailbox-empty", "is-wish-price"];
+const wishPricePhaseClasses = ["is-wish-price-cut", "is-wish-price-image-visible", "is-wish-price-line-one", "is-wish-price-line-two", "is-wish-price-awaiting", "is-wish-price-copy-leaving", "is-wish-price-image-leaving", "is-wish-price-ended"];
 const canvasFontFamily = '"Arial Narrow", Arial, sans-serif';
 const callDialingMs = 2800;
 const callAnsweredReadMs = 9600;
@@ -97,6 +121,7 @@ let isCallMuted = false;
 let callAdvanceMode = null;
 let roomRingCount = 0;
 let isOpeningBroadcastRunning = false;
+let mailboxAction = null;
 
 function random(min, max) {
   return min + Math.random() * (max - min);
@@ -494,6 +519,94 @@ function announceCallStatus(message) {
   }
 }
 
+function setMailboxAction(action) {
+  mailboxAction = action;
+  const labels = {
+    mailbox: "open >",
+    photo: "turn over >",
+  };
+
+  let activeTarget = null;
+
+  for (const [name, target] of Object.entries(mailboxTargets)) {
+    if (!target) {
+      continue;
+    }
+
+    const isActive = name === action;
+    target.disabled = !isActive;
+    target.setAttribute("aria-disabled", String(!isActive));
+
+    if (isActive) {
+      activeTarget = target;
+    }
+  }
+
+  const hasAction = Boolean(action && labels[action]);
+  intro.classList.toggle("is-mailbox-ready", hasAction);
+
+  if (mailboxPrompt) {
+    mailboxPrompt.textContent = hasAction ? labels[action] : "";
+    mailboxPrompt.disabled = !hasAction;
+    mailboxPrompt.setAttribute("aria-disabled", String(!hasAction));
+    mailboxPrompt.setAttribute("aria-hidden", String(!hasAction));
+  }
+
+  if (hasAction && (mailboxPrompt || activeTarget)) {
+    try {
+      (mailboxPrompt || activeTarget).focus({ preventScroll: true });
+    } catch {}
+  }
+}
+
+function armCityAdvance(delay = 1220) {
+  if (!cityAdvanceButton) {
+    return;
+  }
+
+  cityAdvanceButton.disabled = true;
+  cityAdvanceButton.setAttribute("aria-hidden", "true");
+  scheduleCallStep(() => {
+    if (archiveState !== "trend-city") {
+      return;
+    }
+
+    cityAdvanceButton.disabled = false;
+    cityAdvanceButton.setAttribute("aria-hidden", "false");
+  }, delay);
+}
+
+function setMailboxMemoryVisible(isVisible) {
+  intro.classList.toggle("is-mailbox-memory", isVisible);
+
+  if (mailboxMemory) {
+    mailboxMemory.setAttribute("aria-hidden", String(!isVisible));
+  }
+}
+
+function setPropagandaCaption(mode) {
+  intro.classList.toggle("is-propaganda-caption-first", mode === "first");
+
+  propagandaCaptionFirst?.setAttribute("aria-hidden", String(mode !== "first"));
+}
+
+function resetWishPricePresentation() {
+  intro.classList.remove(...wishPricePhaseClasses);
+
+  if (wishPriceLineOne) {
+    wishPriceLineOne.setAttribute("aria-hidden", "true");
+  }
+
+  if (wishPriceLineTwo) {
+    wishPriceLineTwo.setAttribute("aria-hidden", "true");
+  }
+
+  if (wishPriceAdvance) {
+    wishPriceAdvance.disabled = true;
+    wishPriceAdvance.setAttribute("aria-hidden", "true");
+  }
+}
+
 function updateCallLayerAccessibility(activeLayer) {
   if (callSequence) {
     const isVisible = Boolean(activeLayer);
@@ -507,11 +620,23 @@ function updateCallLayerAccessibility(activeLayer) {
   }
 }
 
+function resetInterviewAccessibility() {
+  for (const image of interviewImages) {
+    image.setAttribute("aria-hidden", "true");
+  }
+
+  for (const caption of interviewCaptions) {
+    caption.setAttribute("aria-hidden", "true");
+  }
+}
+
 function updateStorySceneAccessibility(state) {
   const isRoomVisible = ["room-revealing", "trend-room", "city-entering"].includes(state);
   const isCityVisible = ["city-entering", "trend-city"].includes(state);
-  const isFriendsVisible = ["trend-friends", "story-ended"].includes(state);
+  const isFriendsVisible = ["trend-friends", "story-ended", "coercion-flyer", "coercion-final"].includes(state);
   const isFlyerVisible = ["coercion-flyer", "coercion-final"].includes(state);
+  const isMailboxVisible = ["mailbox-closed", "mailbox-open", "mailbox-contents", "mailbox-back", "mailbox-empty"].includes(state);
+  const isWishPriceVisible = state === "wish-price";
 
   if (roomScene) {
     roomScene.setAttribute("aria-hidden", String(!isRoomVisible));
@@ -533,28 +658,59 @@ function updateStorySceneAccessibility(state) {
     flyerScene.inert = !isFlyerVisible;
   }
 
+  if (mailboxScene) {
+    mailboxScene.setAttribute("aria-hidden", String(!isMailboxVisible));
+    mailboxScene.inert = !isMailboxVisible;
+  }
+
+  const activeMailboxClass = state?.startsWith("mailbox-") ? `story-mailbox__image--${state.slice(8)}` : null;
+  for (const image of mailboxImages) {
+    image.setAttribute("aria-hidden", String(!activeMailboxClass || !image.classList.contains(activeMailboxClass)));
+  }
+
+  if (wishPriceScene) {
+    wishPriceScene.setAttribute("aria-hidden", String(!isWishPriceVisible));
+    wishPriceScene.inert = !isWishPriceVisible;
+  }
+
+  if (mailboxNote) {
+    mailboxNote.setAttribute("aria-hidden", String(!["mailbox-back", "mailbox-empty"].includes(state)));
+  }
+
   if (roomAdvanceButton) {
     roomAdvanceButton.disabled = state !== "trend-room";
   }
 
   if (cityAdvanceButton) {
-    cityAdvanceButton.disabled = state !== "trend-city";
+    cityAdvanceButton.disabled = true;
+    cityAdvanceButton.setAttribute("aria-hidden", "true");
   }
+
+  cityMythCaption?.setAttribute("aria-hidden", String(state !== "trend-city"));
+  mailboxMythCaption?.setAttribute("aria-hidden", String(state !== "mailbox-closed"));
 }
 
 function setCallState(state) {
-  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on", "is-call-ready", "is-mailbox-cut", "is-mailbox-ready", "is-mailbox-memory", "is-mailbox-charm-glitch");
   archiveState = state;
   intro.classList.add(`is-${state}`);
   updateCallLayerAccessibility(state);
   updateStorySceneAccessibility(null);
+  setMailboxAction(null);
+  setMailboxMemoryVisible(false);
+  setPropagandaCaption(null);
+  resetWishPricePresentation();
 }
 
 function setStoryState(state) {
-  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on");
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on", "is-call-ready", "is-mailbox-cut", "is-mailbox-ready", "is-mailbox-memory", "is-mailbox-charm-glitch");
   archiveState = state;
   intro.classList.add(`is-${state}`);
   setCallAdvanceMode(null);
+  setMailboxAction(null);
+  setMailboxMemoryVisible(false);
+  setPropagandaCaption(null);
+  resetWishPricePresentation();
   updateCallLayerAccessibility(null);
   updateStorySceneAccessibility(state);
 }
@@ -812,6 +968,7 @@ function playRoomTelephoneRing() {
 function resetRoomTelephoneSequence() {
   roomRingCount = 0;
   intro.classList.remove("is-room-phone-question", "is-room-phone-entering", "is-room-phone-pulse");
+  document.querySelector(".story-scene__phone-subtitle")?.setAttribute("aria-hidden", "true");
 }
 
 function scheduleRoomTelephoneRing(delay) {
@@ -827,7 +984,8 @@ function scheduleRoomTelephoneRing(delay) {
       announceCallStatus("The billboard illuminates the room. The telephone rings.");
     } else if (roomRingCount === 2) {
       intro.classList.add("is-room-phone-question", "is-room-phone-entering");
-      announceCallStatus("What's with that phone?");
+      document.querySelector(".story-scene__phone-subtitle")?.setAttribute("aria-hidden", "false");
+      announceCallStatus("After the broadcast ended, the ringing remained.");
     } else {
       intro.classList.remove("is-room-phone-pulse");
       void intro.offsetWidth;
@@ -839,7 +997,7 @@ function scheduleRoomTelephoneRing(delay) {
   }, delay);
 }
 
-function playStaticCut() {
+function playStaticCut(gainLevel = 0.075) {
   intro.classList.add("is-call-static-cut");
   scheduleCallStep(() => intro.classList.remove("is-call-static-cut"), 180);
 
@@ -861,10 +1019,59 @@ function playStaticCut() {
     }
 
     source.buffer = buffer;
-    cutGain.gain.setValueAtTime(0.075, now);
+    cutGain.gain.setValueAtTime(gainLevel, now);
     cutGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     source.connect(cutGain);
     cutGain.connect(callAudioGain);
+    source.start(now);
+    source.stop(now + duration);
+    trackCallAudioNode(source);
+  } catch {}
+}
+
+function playMailboxCut(duration = 140) {
+  playStaticCut();
+  intro.style.setProperty("--mailbox-cut-duration", `${duration}ms`);
+  intro.classList.add("is-mailbox-cut");
+  scheduleCallStep(() => intro.classList.remove("is-mailbox-cut"), duration);
+}
+
+function playCharmGlitch() {
+  intro.classList.add("is-mailbox-charm-glitch");
+
+  scheduleCallStep(() => {
+    intro.classList.remove("is-mailbox-charm-glitch");
+  }, 200);
+}
+
+function playMailboxFoley(kind) {
+  if (!prepareCallAudio() || !callAudioContext || !callAudioGain) {
+    return;
+  }
+
+  try {
+    const now = callAudioContext.currentTime;
+    const duration = kind === "latch" ? 0.18 : 0.24;
+    const buffer = callAudioContext.createBuffer(1, Math.ceil(callAudioContext.sampleRate * duration), callAudioContext.sampleRate);
+    const samples = buffer.getChannelData(0);
+    const source = callAudioContext.createBufferSource();
+    const filter = callAudioContext.createBiquadFilter();
+    const gain = callAudioContext.createGain();
+
+    for (let index = 0; index < samples.length; index += 1) {
+      const decay = Math.exp(-index / (callAudioContext.sampleRate * (kind === "latch" ? 0.045 : 0.11)));
+      samples[index] = (Math.random() * 2 - 1) * decay;
+    }
+
+    source.buffer = buffer;
+    filter.type = kind === "latch" ? "bandpass" : "lowpass";
+    filter.frequency.value = kind === "latch" ? 1150 : 980;
+    filter.Q.value = kind === "latch" ? 2.1 : 0.7;
+    gain.gain.setValueAtTime(kind === "latch" ? 0.052 : 0.032, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(callAudioGain);
     source.start(now);
     source.stop(now + duration);
     trackCallAudioNode(source);
@@ -974,8 +1181,10 @@ function resetCallSequence() {
   stopNewsVideo();
   setBroadcastMediaSubtitle();
   setCallAdvanceMode(null);
-  intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on", "is-broadcast-video-ready", "is-opening-broadcast");
+  intro.classList.remove(...callStateClasses, ...storyStateClasses, ...previewStateClasses, "is-broadcast-called", "is-call-static-cut", "is-call-awaiting", "is-broadcast-power-cut", "is-broadcast-power-on", "is-broadcast-video-ready", "is-opening-broadcast", "is-call-ready", "is-mailbox-cut", "is-mailbox-ready");
+  setMailboxAction(null);
   updateCallLayerAccessibility(null);
+  resetInterviewAccessibility();
   updateStorySceneAccessibility(null);
   setBroadcastCallDisabled(archiveState !== "broadcast");
 
@@ -1157,6 +1366,62 @@ function enterArchive() {
   }, 3300);
 }
 
+function enterMythBeforeBroadcast() {
+  if (!prologueScene || !preBroadcastMyth || !broadcastScene || archiveState !== "prologue") {
+    return;
+  }
+
+  clearArchiveTimers();
+  clearCallTimers();
+  archiveState = "prebroadcast-myth";
+  pointer.active = false;
+  setPrologueEntryDisabled(true);
+  setDoctrineCloserDisabled(true);
+  setBroadcastCallDisabled(true);
+  doctrineScene?.setAttribute("aria-hidden", "true");
+  broadcastScene.setAttribute("aria-hidden", "true");
+  preBroadcastMyth.setAttribute("aria-hidden", "false");
+  intro.classList.remove("is-prologue-leaving", "is-prebroadcast-myth-leaving");
+  intro.classList.add("is-prologue-myth");
+  announceCallStatus("And the world answered her.");
+
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
+
+  scheduleCallStep(() => {
+    if (archiveState === "prebroadcast-myth") {
+      intro.classList.add("is-prebroadcast-myth-leaving");
+    }
+  }, 2650);
+
+  scheduleCallStep(beginBroadcastFromMyth, 2900);
+}
+
+function beginBroadcastFromMyth() {
+  if (!broadcastScene || archiveState !== "prebroadcast-myth") {
+    return;
+  }
+
+  archiveState = "broadcast-entering";
+  intro.classList.remove("is-prologue-myth");
+  intro.classList.add("is-prologue-leaving", "is-prebroadcast-myth-leaving", "is-broadcast-entering");
+  broadcastScene.setAttribute("aria-hidden", "false");
+  setBroadcastCallDisabled(true);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "broadcast-entering") {
+      return;
+    }
+
+    prologueScene?.setAttribute("aria-hidden", "true");
+    preBroadcastMyth?.setAttribute("aria-hidden", "true");
+    intro.classList.remove("is-prologue", "is-prologue-leaving", "is-prebroadcast-myth-leaving");
+  }, 650);
+
+  scheduleCallStep(completeBroadcast, 4200);
+}
+
 function enterDoctrine() {
   if (!prologueScene || !doctrineScene || archiveState !== "prologue") {
     return;
@@ -1203,6 +1468,8 @@ function returnToPrologue() {
   archiveState = "prologue";
   pointer.active = false;
   intro.classList.remove(
+    "is-prologue-myth",
+    "is-prebroadcast-myth-leaving",
     "is-prologue-leaving",
     "is-doctrine",
     "is-doctrine-entering",
@@ -1215,6 +1482,7 @@ function returnToPrologue() {
   );
   intro.classList.add("is-prologue");
   prologueScene.setAttribute("aria-hidden", "false");
+  preBroadcastMyth?.setAttribute("aria-hidden", "true");
   doctrineScene.setAttribute("aria-hidden", "true");
   if (broadcastScene) {
     broadcastScene.setAttribute("aria-hidden", "true");
@@ -1240,6 +1508,8 @@ function returnToIntro() {
   pointer.active = false;
   intro.classList.remove(
     "is-prologue",
+    "is-prologue-myth",
+    "is-prebroadcast-myth-leaving",
     "is-prologue-leaving",
     "is-ritual",
     "is-dissolving",
@@ -1255,6 +1525,7 @@ function returnToIntro() {
   );
   intro.classList.add("is-resetting");
   prologueScene.setAttribute("aria-hidden", "true");
+  preBroadcastMyth?.setAttribute("aria-hidden", "true");
 
   if (doctrineScene) {
     doctrineScene.setAttribute("aria-hidden", "true");
@@ -1322,7 +1593,41 @@ function returnToDoctrineFromBroadcast() {
 
 function goBack() {
   if (isOpeningBroadcastRunning) {
-    returnToDoctrineFromBroadcast();
+    returnToPrologue();
+    return;
+  }
+
+  if (archiveState === "wish-price") {
+    restoreMailboxState("mailbox-empty", null, "The Love World keychain is gone. The photograph remains face down.");
+    return;
+  }
+
+  if (archiveState === "mailbox-empty") {
+    restoreMailboxState("mailbox-back", null, "The message on the back of the photograph is visible again.");
+    return;
+  }
+
+  if (archiveState === "mailbox-back") {
+    restoreMailboxState("mailbox-contents", "photo", "The photograph and Love World keychain are visible.");
+    return;
+  }
+
+  if (archiveState === "mailbox-contents") {
+    restoreMailboxState("mailbox-closed", "mailbox", "The mailbox is closed again.");
+    return;
+  }
+
+  if (archiveState === "mailbox-open") {
+    restoreMailboxState("mailbox-closed", "mailbox", "The mailbox is closed again.");
+    return;
+  }
+
+  if (archiveState === "mailbox-closed") {
+    clearCallTimers();
+    stopCallAudio();
+    setStoryState("coercion-final");
+    setPropagandaCaption("first");
+    announceCallStatus("Everyone belongs in love. The parking-lot image is visible again.");
     return;
   }
 
@@ -1337,12 +1642,17 @@ function goBack() {
   }
 
   if (archiveState === "trend-room" || archiveState === "room-revealing" || archiveState === "tv-powering-off") {
-    returnToLoveResult();
+    showTrendInterviews();
     return;
   }
 
-  if (["call-dialing", "call-answered", "call-ended", "love-news", "trend-interviews", "love-weekly", "love-result"].includes(archiveState)) {
+  if (["call-dialing", "call-answered", "call-ended", "love-news", "trend-interviews"].includes(archiveState)) {
     returnToOriginalBroadcast();
+    return;
+  }
+
+  if (archiveState === "prebroadcast-myth") {
+    returnToPrologue();
     return;
   }
 
@@ -1362,7 +1672,7 @@ function goBack() {
   }
 
   if (archiveState === "broadcast-entering" || archiveState === "broadcast") {
-    returnToDoctrineFromBroadcast();
+    returnToPrologue();
   }
 }
 
@@ -1429,7 +1739,7 @@ function returnToOriginalBroadcast() {
   archiveState = "broadcast";
   setBroadcastCallDisabled(false);
   intro.classList.remove(...callStateClasses, ...storyStateClasses, "is-broadcast-called", "is-call-static-cut", "is-broadcast-power-cut", "is-broadcast-power-on");
-  intro.classList.add("is-broadcast");
+  intro.classList.add("is-broadcast", "is-call-ready");
   showBroadcastAdFinalFrame();
   announceCallStatus("Call cancelled. LOVE WORLD broadcast restored.");
 }
@@ -1447,43 +1757,46 @@ function startOpeningNews() {
   playNewsVideo().catch(() => {
     scheduleCallStep(() => {
       if (isOpeningBroadcastRunning && archiveState === "love-news") {
-        transitionOpeningNewsToAd();
+        transitionOpeningNewsToAdvertisement();
       }
     }, 1200);
   });
 }
 
-function transitionOpeningNewsToAd() {
+function transitionOpeningNewsToAdvertisement() {
   if (!isOpeningBroadcastRunning || archiveState !== "love-news") {
     return;
   }
 
-  newsVideo?.pause();
   setBroadcastMediaSubtitle();
-  intro.classList.add("is-broadcast-power-cut");
   playNewsPowerAudio();
   announceCallStatus("The news broadcast has ended.");
 
   scheduleCallStep(() => {
-    if (!isOpeningBroadcastRunning) {
-      return;
-    }
+    startOpeningAdvertisement();
+  }, 180);
+}
 
-    stopNewsVideo();
-    setCallState("broadcast");
-    intro.classList.add("is-opening-broadcast");
-    setBroadcastCallDisabled(true);
-    announceCallStatus("LOVE CHARM advertisement.");
-    updateAdSubtitle();
+function startOpeningAdvertisement() {
+  if (!isOpeningBroadcastRunning || archiveState !== "love-news") {
+    return;
+  }
 
-    playBroadcastAdMedia().catch(() => {
-      scheduleCallStep(() => {
-        if (isOpeningBroadcastRunning && archiveState === "broadcast") {
-          finishOpeningBroadcast();
-        }
-      }, 1200);
-    });
-  }, 620);
+  stopNewsVideo();
+  setCallState("broadcast");
+  intro.classList.add("is-opening-broadcast");
+  updateCallLayerAccessibility(null);
+  setBroadcastCallDisabled(true);
+  announceCallStatus("LOVE CHARM advertisement.");
+  updateAdSubtitle();
+
+  playBroadcastAdMedia().catch(() => {
+    scheduleCallStep(() => {
+      if (isOpeningBroadcastRunning && archiveState === "broadcast") {
+        finishOpeningBroadcast();
+      }
+    }, 1200);
+  });
 }
 
 function finishOpeningBroadcast() {
@@ -1495,50 +1808,64 @@ function finishOpeningBroadcast() {
   setBroadcastMediaSubtitle();
   intro.classList.remove("is-opening-broadcast", "is-broadcast-power-cut", "is-broadcast-power-on");
   showBroadcastAdFinalFrame();
-  setBroadcastCallDisabled(false);
-  announceCallStatus("The advertisement has ended. Call her.");
+  setBroadcastCallDisabled(true);
+  intro.classList.remove("is-call-ready");
+  announceCallStatus("The advertisement has ended.");
+
+  scheduleCallStep(() => {
+    if (archiveState !== "broadcast" || isOpeningBroadcastRunning) {
+      return;
+    }
+
+    intro.classList.add("is-call-ready");
+    setBroadcastCallDisabled(false);
+    announceCallStatus("The advertisement has ended. Call her.");
+  }, 420);
 }
 
 function showTrendInterviews() {
   setCallAdvanceMode(null);
   clearCallTimers();
   setCallState("trend-interviews");
+  resetInterviewAccessibility();
+  document.querySelector(".camcorder-frame__image--away")?.setAttribute("aria-hidden", "false");
   announceCallStatus("LOVE WORLD interviews begin.");
 
+  const captionWindows = [
+    [".camcorder-caption--1", 650, 2350],
+    [".camcorder-caption--2", 2600, 4300],
+    [".camcorder-caption--3", 4550, 6250],
+    [".camcorder-caption--4", 6500, 8200],
+    [".camcorder-caption--final", 8760, 11800],
+  ];
+
+  for (const [selector, start, end] of captionWindows) {
+    scheduleCallStep(() => {
+      if (archiveState === "trend-interviews") {
+        document.querySelector(selector)?.setAttribute("aria-hidden", "false");
+      }
+    }, start);
+    scheduleCallStep(() => document.querySelector(selector)?.setAttribute("aria-hidden", "true"), end);
+  }
+
   scheduleCallStep(() => {
-    if (archiveState === "trend-interviews") {
-      announceCallStatus("Love status unconfirmed.");
+    if (archiveState !== "trend-interviews") {
+      return;
     }
-  }, 6100);
+
+    document.querySelector(".camcorder-frame__image--away")?.setAttribute("aria-hidden", "true");
+    document.querySelector(".camcorder-frame__image--stare")?.setAttribute("aria-hidden", "false");
+  }, 8480);
 
   scheduleCallStep(() => {
     if (archiveState === "trend-interviews") {
-      showLoveWeekly();
+      startRoomReveal();
     }
   }, 11800);
 }
 
-function showLoveWeekly() {
-  setCallAdvanceMode(null);
-  clearCallTimers();
-  setCallState("love-weekly");
-  announceCallStatus("Love World Weekly. Find out where you belong.");
-}
-
-function showLoveResult() {
-  if (archiveState !== "love-weekly") {
-    return;
-  }
-
-  setCallState("love-result");
-  if (callSequence) {
-    callSequence.tabIndex = 0;
-  }
-  announceCallStatus("Your love type is unconfirmed. No action is required.");
-}
-
 function startRoomReveal() {
-  if (archiveState !== "love-result" || !roomScene) {
+  if (archiveState !== "trend-interviews" || !roomScene) {
     return;
   }
 
@@ -1586,8 +1913,8 @@ function startRoomReveal() {
 
         announceCallStatus("The room remains under observation.");
       }, prefersReducedMotion.matches ? 3600 : 5900);
-    }, prefersReducedMotion.matches ? 80 : 3900);
-  }, prefersReducedMotion.matches ? 40 : 760);
+    }, prefersReducedMotion.matches ? 80 : 3400);
+  }, prefersReducedMotion.matches ? 40 : 620);
 }
 
 function startCityTransition() {
@@ -1607,6 +1934,7 @@ function startCityTransition() {
     }
 
     setStoryState("trend-city");
+    armCityAdvance();
     announceCallStatus("Love World has spread through the city. Look closer to continue.");
   }, prefersReducedMotion.matches ? 60 : 2200);
 }
@@ -1627,9 +1955,8 @@ function startFriendsEnding() {
       return;
     }
 
-    playStaticCut();
     setStoryState("coercion-flyer");
-    announceCallStatus("The parking-lot image freezes as a Love World public service broadcast. Everyone belongs in love.");
+    announceCallStatus("The parking-lot image freezes.");
   }, 3200);
 
   scheduleCallStep(() => {
@@ -1637,19 +1964,223 @@ function startFriendsEnding() {
       return;
     }
 
-    playStaticCut();
-    announceCallStatus("Loneliness is not permitted.");
-  }, 8500);
+    setPropagandaCaption("first");
+    announceCallStatus("Everyone belongs in love.");
+  }, 4400);
 
   scheduleCallStep(() => {
     if (archiveState !== "coercion-flyer") {
       return;
     }
 
-    playStaticCut();
     setStoryState("coercion-final");
-    announceCallStatus("Love World community broadcast: Non-lovers will be corrected.");
-  }, 11000);
+    setPropagandaCaption("first");
+    announceCallStatus("Everyone belongs in love. The parking-lot image remains still.");
+  }, 7600);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "coercion-final") {
+      return;
+    }
+
+    showMailboxClosed({ withCut: false });
+  }, 10400);
+}
+
+function showMailboxClosed({ withLongCut = false, withCut = true } = {}) {
+  if (!mailboxScene) {
+    return;
+  }
+
+  clearCallTimers();
+  stopCallAudio();
+  setStoryState("mailbox-closed");
+
+  if (withCut) {
+    playMailboxCut(withLongCut ? 190 : 140);
+  }
+  announceCallStatus("A closed mailbox stands beside a quiet suburban road.");
+
+  scheduleCallStep(() => {
+    if (archiveState !== "mailbox-closed") {
+      return;
+    }
+
+    setMailboxAction("mailbox");
+    announceCallStatus("There is something inside the mailbox.");
+  }, 900);
+}
+
+function openMailbox() {
+  if (archiveState !== "mailbox-closed" || mailboxAction !== "mailbox") {
+    return;
+  }
+
+  clearCallTimers();
+  setMailboxAction(null);
+  playMailboxFoley("latch");
+  setStoryState("mailbox-open");
+  playMailboxCut(90);
+  announceCallStatus("The mailbox opens. A faded pink envelope is inside.");
+
+  scheduleCallStep(() => {
+    if (archiveState !== "mailbox-open") {
+      return;
+    }
+
+    playMailboxFoley("paper");
+    setStoryState("mailbox-contents");
+    playMailboxCut(85);
+    announceCallStatus("Inside are a photograph of four friends and a Love World heart-and-cat keychain.");
+
+    scheduleCallStep(() => {
+      if (archiveState === "mailbox-contents") {
+        setMailboxAction("photo");
+      }
+    }, 900);
+  }, 1000);
+}
+
+function turnMailboxPhoto() {
+  if (archiveState !== "mailbox-contents" || mailboxAction !== "photo") {
+    return;
+  }
+
+  clearCallTimers();
+  setMailboxAction(null);
+  playMailboxFoley("paper");
+  setStoryState("mailbox-back");
+  playMailboxCut(90);
+  announceCallStatus("The back of the photograph reads: We saved yours.");
+
+  scheduleCallStep(() => {
+    if (archiveState !== "mailbox-back") {
+      return;
+    }
+
+    setMailboxMemoryVisible(true);
+    announceCallStatus("You don't remember leaving it behind.");
+  }, 2400);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "mailbox-back") {
+      return;
+    }
+
+    showCharmGone();
+  }, 5200);
+}
+
+function showCharmGone() {
+  if (archiveState !== "mailbox-back") {
+    return;
+  }
+
+  clearCallTimers();
+  setMailboxAction(null);
+  playMailboxFoley("latch");
+  setStoryState("mailbox-empty");
+  playCharmGlitch();
+  announceCallStatus("The Love World keychain is gone. The photograph remains face down.");
+
+  scheduleCallStep(() => {
+    if (archiveState === "mailbox-empty") {
+      startWishPriceEpilogue();
+    }
+  }, 1600);
+}
+
+function startWishPriceEpilogue() {
+  if (archiveState !== "mailbox-empty" || !wishPriceScene) {
+    return;
+  }
+
+  clearCallTimers();
+  stopCallAudio();
+  setStoryState("wish-price");
+  announceCallStatus("The mailbox fades into the image of the angel.");
+
+  scheduleCallStep(() => {
+    if (archiveState === "wish-price") {
+      intro.classList.add("is-wish-price-image-visible");
+    }
+  }, 120);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "wish-price") {
+      return;
+    }
+
+    intro.classList.add("is-wish-price-line-one");
+    wishPriceLineOne?.setAttribute("aria-hidden", "false");
+    announceCallStatus("But every wish...");
+  }, 1800);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "wish-price") {
+      return;
+    }
+
+    intro.classList.add("is-wish-price-line-two");
+    wishPriceLineTwo?.setAttribute("aria-hidden", "false");
+    announceCallStatus("But every wish asks for something in return.");
+  }, 3100);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "wish-price" || !wishPriceAdvance) {
+      return;
+    }
+
+    intro.classList.add("is-wish-price-awaiting");
+    wishPriceAdvance.disabled = false;
+    wishPriceAdvance.setAttribute("aria-hidden", "false");
+    announceCallStatus("The wish remains on screen. Click to continue.");
+  }, 4200);
+}
+
+function finishWishPriceEpilogue() {
+  if (archiveState !== "wish-price" || !wishPriceAdvance || wishPriceAdvance.disabled) {
+    return;
+  }
+
+  clearCallTimers();
+  wishPriceAdvance.disabled = true;
+  wishPriceAdvance.setAttribute("aria-hidden", "true");
+  intro.classList.remove("is-wish-price-awaiting");
+  intro.classList.add("is-wish-price-copy-leaving");
+
+  scheduleCallStep(() => {
+    if (archiveState === "wish-price") {
+      intro.classList.add("is-wish-price-image-leaving");
+    }
+  }, 850);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "wish-price") {
+      return;
+    }
+
+    intro.classList.add("is-wish-price-ended");
+    wishPriceLineOne?.setAttribute("aria-hidden", "true");
+    wishPriceLineTwo?.setAttribute("aria-hidden", "true");
+    announceCallStatus("The screen is dark.");
+  }, 2150);
+}
+
+function restoreMailboxState(state, action, status) {
+  clearCallTimers();
+  stopCallAudio();
+  setStoryState(state);
+  setMailboxAction(action);
+  announceCallStatus(status);
+}
+
+function activateMailboxAction() {
+  if (mailboxAction === "mailbox") {
+    openMailbox();
+  } else if (mailboxAction === "photo") {
+    turnMailboxPhoto();
+  }
 }
 
 function returnToTrendCity() {
@@ -1657,6 +2188,7 @@ function returnToTrendCity() {
   stopCallAudio();
   resetRoomTelephoneSequence();
   setStoryState("trend-city");
+  armCityAdvance();
   announceCallStatus("Love World has spread through the city.");
 }
 
@@ -1667,17 +2199,6 @@ function returnToTrendRoom() {
   setStoryState("trend-room");
   scheduleRoomTelephoneRing(prefersReducedMotion.matches ? 100 : 900);
   announceCallStatus("Observation may continue through the window.");
-}
-
-function returnToLoveResult() {
-  clearCallTimers();
-  stopCallAudio();
-  resetRoomTelephoneSequence();
-  setCallState("love-result");
-  if (callSequence) {
-    callSequence.tabIndex = 0;
-  }
-  announceCallStatus("Your love type is unconfirmed. No action is required.");
 }
 
 function showCallEndedState() {
@@ -1886,7 +2407,7 @@ if (archiveBackButton) {
 }
 
 for (const button of prologueEntryButtons) {
-  button.addEventListener("click", enterDoctrine);
+  button.addEventListener("click", enterMythBeforeBroadcast);
 }
 
 for (const button of doctrineCloserButtons) {
@@ -1936,26 +2457,16 @@ if (broadcastAdVideo) {
 
 if (newsVideo) {
   newsVideo.addEventListener("timeupdate", updateNewsSubtitle);
-  newsVideo.addEventListener("ended", transitionOpeningNewsToAd);
+  newsVideo.addEventListener("ended", transitionOpeningNewsToAdvertisement);
   newsVideo.addEventListener("error", () => {
     if (isOpeningBroadcastRunning && archiveState === "love-news") {
-      transitionOpeningNewsToAd();
+      transitionOpeningNewsToAdvertisement();
     }
   });
 }
 
 if (callSequence) {
   callSequence.addEventListener("click", () => {
-    if (archiveState === "love-weekly") {
-      showLoveResult();
-      return;
-    }
-
-    if (archiveState === "love-result") {
-      startRoomReveal();
-      return;
-    }
-
     continueCallSequence();
   });
   callSequence.addEventListener("keydown", (event) => {
@@ -1964,11 +2475,6 @@ if (callSequence) {
     }
 
     event.preventDefault();
-
-    if (archiveState === "love-result") {
-      startRoomReveal();
-      return;
-    }
 
     continueCallSequence();
   });
@@ -1985,6 +2491,51 @@ if (cityAdvanceButton) {
   cityAdvanceButton.addEventListener("click", (event) => {
     event.stopPropagation();
     startFriendsEnding();
+  });
+  cityAdvanceButton.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    startFriendsEnding();
+  });
+}
+
+if (mailboxTargets.mailbox) {
+  mailboxTargets.mailbox.addEventListener("click", openMailbox);
+}
+
+if (mailboxTargets.photo) {
+  mailboxTargets.photo.addEventListener("click", turnMailboxPhoto);
+}
+
+if (mailboxPrompt) {
+  mailboxPrompt.addEventListener("click", activateMailboxAction);
+  mailboxPrompt.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    activateMailboxAction();
+  });
+}
+
+if (wishPriceAdvance) {
+  wishPriceAdvance.addEventListener("click", finishWishPriceEpilogue);
+}
+
+if (mailboxScene) {
+  mailboxScene.addEventListener("keydown", (event) => {
+    if ((event.key !== "Enter" && event.key !== " ") || !event.target.closest(".story-mailbox__target")) {
+      return;
+    }
+
+    event.preventDefault();
+    activateMailboxAction();
   });
 }
 
@@ -2014,14 +2565,23 @@ if (callMuteButton) {
   callMuteButton.addEventListener("click", toggleCallMute);
 }
 
-for (const choice of loveWeeklyChoices) {
-  choice.addEventListener("click", (event) => {
-    event.stopPropagation();
-    showLoveResult();
-  });
-}
-
 resetCallSequence();
+
+if (isBridgePreview) {
+  hasEnteredArchive = true;
+  archiveState = "prologue";
+  intro.classList.add("is-prologue", "is-bridge-preview");
+  prologueScene?.setAttribute("aria-hidden", "false");
+  doctrineScene?.setAttribute("aria-hidden", "true");
+  broadcastScene?.setAttribute("aria-hidden", "true");
+  setPrologueEntryDisabled(false);
+
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
+
+  enterMythBeforeBroadcast();
+}
 
 if (isPropagandaPreview && flyerScene) {
   hasEnteredArchive = true;
@@ -2029,7 +2589,7 @@ if (isPropagandaPreview && flyerScene) {
   setStoryState("trend-friends");
 
   if (archiveBackButton) {
-    archiveBackButton.disabled = true;
+    archiveBackButton.disabled = false;
   }
 
   playParkingLotAmbience();
@@ -2040,9 +2600,8 @@ if (isPropagandaPreview && flyerScene) {
       return;
     }
 
-    playStaticCut();
     setStoryState("coercion-flyer");
-    announceCallStatus("The image freezes as a Love World public service broadcast. Everyone belongs in love.");
+    announceCallStatus("The parking-lot image freezes.");
   }, 3200);
 
   scheduleCallStep(() => {
@@ -2050,17 +2609,48 @@ if (isPropagandaPreview && flyerScene) {
       return;
     }
 
-    playStaticCut();
-    announceCallStatus("Loneliness is not permitted.");
-  }, 8500);
+    setPropagandaCaption("first");
+    announceCallStatus("Everyone belongs in love.");
+  }, 4400);
 
   scheduleCallStep(() => {
     if (archiveState !== "coercion-flyer") {
       return;
     }
 
-    playStaticCut();
     setStoryState("coercion-final");
-    announceCallStatus("Love World community broadcast: Non-lovers will be corrected.");
-  }, 11000);
+    setPropagandaCaption("first");
+    announceCallStatus("Everyone belongs in love. The parking-lot image remains still.");
+  }, 7600);
+
+  scheduleCallStep(() => {
+    if (archiveState !== "coercion-final") {
+      return;
+    }
+
+    showMailboxClosed({ withCut: false });
+  }, 10400);
+}
+
+if (isMailboxPreview && mailboxScene) {
+  hasEnteredArchive = true;
+  intro.classList.add("is-broadcast", "is-mailbox-preview");
+
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
+
+  showMailboxClosed();
+}
+
+if (isWishPricePreview && wishPriceScene) {
+  hasEnteredArchive = true;
+  intro.classList.add("is-broadcast", "is-wish-preview");
+
+  if (archiveBackButton) {
+    archiveBackButton.disabled = false;
+  }
+
+  setStoryState("mailbox-empty");
+  startWishPriceEpilogue();
 }
