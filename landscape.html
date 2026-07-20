@@ -12,10 +12,16 @@
     <link rel="preload" as="image" href="assets/love-city-trend-camcorder-v2.png" type="image/png">
     <link rel="preload" as="image" href="assets/love-world-parking-lot-exclusion-v1.png" type="image/png">
     <link rel="preload" as="image" href="assets/love-world-propaganda-static-v1.webp" type="image/webp">
+    <link rel="preload" as="image" href="assets/love-world-mailbox-closed-v1.png" type="image/png">
+    <link rel="preload" as="image" href="assets/love-world-mailbox-open-v1.png" type="image/png">
+    <link rel="preload" as="image" href="assets/love-world-mailbox-contents-v1.png" type="image/png">
+    <link rel="preload" as="image" href="assets/love-world-mailbox-photo-back-v1.png" type="image/png">
+    <link rel="preload" as="image" href="assets/love-world-mailbox-photo-back-empty-v1.png" type="image/png">
+    <link rel="preload" as="image" href="assets/love-world-wish-price-angel-v1.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500&amp;display=swap">
-    <link rel="stylesheet" href="styles.css?v=20260717parking1">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500&amp;family=Reenie+Beanie&amp;display=swap">
+    <link rel="stylesheet" href="styles.css?v=20260720myth10">
   </head>
   <body>
     <main class="archive-intro archive-intro--wide" data-layout="wide-duo" aria-label="LOVE WORLD interactive broadcast">
@@ -37,20 +43,25 @@
           alt=""
           aria-hidden="true"
         >
-        <button class="prologue-copy prologue-copy--left" type="button" aria-label="Enter the first doctrine" disabled>
+        <button class="prologue-copy prologue-copy--left" type="button" aria-label="Continue the story" disabled>
           <span>Once upon a time,</span>
           <span>there was a girl</span>
           <span>who wished for</span>
           <span>everyone</span>
           <span>to fall in love.</span>
         </button>
-        <button class="prologue-copy prologue-copy--right" type="button" aria-label="Enter the first doctrine" disabled>
+        <button class="prologue-copy prologue-copy--right" type="button" aria-label="Continue the story" disabled>
           <span>Once upon a time,</span>
           <span>there was a girl</span>
           <span>who wished for</span>
           <span>everyone</span>
           <span>to fall in love.</span>
         </button>
+      </section>
+      <section class="prebroadcast-myth" aria-label="And the world answered her" aria-hidden="true">
+        <div class="prebroadcast-myth__veil" aria-hidden="true"></div>
+        <div class="prebroadcast-myth__glow" aria-hidden="true"></div>
+        <p class="prebroadcast-myth__copy">and the world answered her.</p>
       </section>
       <section class="doctrine-scene" aria-label="Love World first doctrine" aria-hidden="true">
         <img
@@ -150,6 +161,7 @@
                   alt="1990년대 쇼핑몰에서 사랑 부적을 고르는 사람들"
                   width="1448"
                   height="1086"
+                  aria-hidden="true"
                 >
                 <img
                   class="camcorder-frame__image camcorder-frame__image--stare"
@@ -157,48 +169,15 @@
                   alt="카메라를 바라보는 사랑 부적 구매자"
                   width="1448"
                   height="1086"
+                  aria-hidden="true"
                 >
                 <div class="camcorder-frame__noise" aria-hidden="true"></div>
-                <p class="camcorder-caption camcorder-caption--1">“요즘 다 이거 해요.”</p>
-                <p class="camcorder-caption camcorder-caption--2">“그냥 귀여워서 샀어요.”</p>
-                <p class="camcorder-caption camcorder-caption--3">“사랑하면 기분이 좋아진대요.”</p>
-                <p class="camcorder-caption camcorder-caption--4">“안 하면 좀 이상하잖아요.”</p>
-                <p class="camcorder-caption camcorder-caption--final">you don't have one yet?</p>
-                <p class="camcorder-status">LOVE STATUS: UNCONFIRMED</p>
+                <p class="camcorder-caption camcorder-caption--1" aria-hidden="true">“요즘 다 이거 해요.”</p>
+                <p class="camcorder-caption camcorder-caption--2" aria-hidden="true">“그냥 귀여워서 샀어요.”</p>
+                <p class="camcorder-caption camcorder-caption--3" aria-hidden="true">“사랑하면 기분이 좋아진대요.”</p>
+                <p class="camcorder-caption camcorder-caption--4" aria-hidden="true">“안 하면 좀 이상하잖아요.”</p>
+                <p class="camcorder-caption camcorder-caption--final" aria-hidden="true">you don't have one yet?</p>
               </div>
-            </section>
-            <section class="call-sequence__layer call-sequence__layer--weekly" data-call-layer="love-weekly" aria-hidden="true">
-              <img
-                class="love-weekly__image"
-                src="assets/love-weekly-quiz-v1.png"
-                alt="LOVE WORLD WEEKLY 사랑 유형 퀴즈"
-                width="1448"
-                height="1086"
-              >
-              <div class="love-weekly__heading">
-                <p>LOVE WORLD WEEKLY</p>
-                <h2>WHAT'S YOUR LOVE TYPE?</h2>
-              </div>
-              <div class="love-weekly__choices" aria-label="Choose your love type">
-                <button type="button" data-love-type="always">always in love</button>
-                <button type="button" data-love-type="almost">almost in love</button>
-                <button type="button" data-love-type="unknown">i don't know yet</button>
-              </div>
-            </section>
-            <section class="call-sequence__layer call-sequence__layer--result" data-call-layer="love-result" aria-hidden="true">
-              <img
-                class="love-weekly__image"
-                src="assets/love-weekly-result-v1.png"
-                alt="LOVE WORLD WEEKLY 사랑 유형 결과"
-                width="1448"
-                height="1086"
-              >
-              <div class="love-result__copy">
-                <h2>type: unconfirmed</h2>
-                <p>DON'T WORRY.<br>EVERYONE STARTS SOMEWHERE.</p>
-                <small>NO ACTION IS REQUIRED.</small>
-              </div>
-              <p class="love-result__notice">YOU MAY NOTICE A DIFFERENCE SOON.</p>
             </section>
           </div>
           <div class="broadcast-static" aria-hidden="true">
@@ -217,7 +196,7 @@
             height="941"
           >
           <button class="story-scene__advance" type="button" aria-label="Continue from the room to the city" disabled></button>
-          <p class="story-scene__phone-subtitle" aria-hidden="true">- what's with that phone...?</p>
+          <p class="story-scene__phone-subtitle" aria-hidden="true">after the broadcast ended,<br>the ringing remained.</p>
           <div class="story-scene__billboard-flash" aria-hidden="true"></div>
           <div class="story-camcorder" aria-hidden="true">
             <div class="story-camcorder__noise"></div>
@@ -232,7 +211,8 @@
             width="1672"
             height="941"
           >
-          <button class="story-scene__city-advance" type="button" aria-label="Look closer at the Love World trend" disabled>- look closer</button>
+          <p class="story-scene__myth-caption story-scene__myth-caption--city" aria-hidden="true">by morning,<br>everyone was wearing one.</p>
+          <button class="story-scene__city-advance" type="button" aria-label="Continue to the people wearing Love World charms" aria-hidden="true" disabled>continue &gt;</button>
           <div class="story-camcorder" aria-hidden="true">
             <div class="story-camcorder__noise"></div>
             <div class="story-camcorder__bar"></div>
@@ -252,24 +232,10 @@
           </div>
         </section>
         <section class="story-scene story-scene--flyer" aria-label="The parking-lot image freezes into a Love World community broadcast" aria-hidden="true">
-          <img
-            class="story-propaganda__image"
-            src="assets/love-world-parking-lot-exclusion-v1.png"
-            alt=""
-            aria-hidden="true"
-            width="1672"
-            height="941"
-          >
           <div class="story-propaganda__texture" aria-hidden="true"></div>
           <div class="story-propaganda__shade" aria-hidden="true"></div>
-          <div class="story-propaganda__copy">
-            <p class="story-propaganda__kicker">love world community</p>
-            <h2 class="story-propaganda__headline"><span>everyone belongs</span><span>in love</span></h2>
-            <div class="story-propaganda__warning" aria-live="polite">
-              <p class="story-propaganda__service">a public service message from love world</p>
-              <p class="story-propaganda__warning-first">loneliness is not permitted</p>
-              <p class="story-propaganda__warning-final">non-lovers will be corrected</p>
-            </div>
+          <div class="story-propaganda__captions" aria-live="polite">
+            <p class="story-propaganda__caption story-propaganda__caption--first" aria-hidden="true">everyone belongs in love</p>
           </div>
           <div class="story-propaganda__static" aria-hidden="true">
             <div class="story-propaganda__static-field"></div>
@@ -278,6 +244,86 @@
             <div class="story-propaganda__static-scanlines"></div>
           </div>
           <div class="story-propaganda__burst" aria-hidden="true"></div>
+        </section>
+        <template id="deferred-coercion-copy">non-lovers will be corrected</template>
+        <section class="story-scene story-scene--mailbox" aria-label="A Love World package waits inside a suburban mailbox" aria-hidden="true">
+          <p class="story-scene__myth-caption story-scene__myth-caption--mailbox" aria-hidden="true">the next evening,<br>something was waiting outside.</p>
+          <img
+            class="story-mailbox__image story-mailbox__image--closed"
+            src="assets/love-world-mailbox-closed-v1.png"
+            alt="낡은 캠코더 화면 속 교외 주택가의 닫힌 우체통"
+            aria-hidden="true"
+            width="1672"
+            height="941"
+          >
+          <img
+            class="story-mailbox__image story-mailbox__image--open"
+            src="assets/love-world-mailbox-open-v1.png"
+            alt="문이 열린 우체통 안에 놓인 바랜 분홍색 봉투"
+            aria-hidden="true"
+            width="1672"
+            height="941"
+          >
+          <img
+            class="story-mailbox__image story-mailbox__image--contents"
+            src="assets/love-world-mailbox-contents-v1.png"
+            alt="네 친구의 사진과 LOVE WORLD 하트 및 고양이 키링이 든 봉투"
+            aria-hidden="true"
+            width="1672"
+            height="941"
+          >
+          <img
+            class="story-mailbox__image story-mailbox__image--back"
+            src="assets/love-world-mailbox-photo-back-v1.png"
+            alt="책상 위에 뒤집어 놓은 오래된 사진"
+            aria-hidden="true"
+            width="1672"
+            height="941"
+          >
+          <img
+            class="story-mailbox__image story-mailbox__image--empty"
+            src="assets/love-world-mailbox-photo-back-empty-v1.png"
+            alt="같은 사진 뒷면과 봉투가 남아 있지만 옆의 LOVE WORLD 키링은 사라졌다"
+            aria-hidden="true"
+            width="1672"
+            height="941"
+          >
+          <div class="story-mailbox__note" aria-hidden="true">
+            <p aria-label="we saved yours">
+              <span class="story-mailbox__note-word" aria-hidden="true"><i>w</i><i>e</i></span>
+              <span class="story-mailbox__note-word" aria-hidden="true"><i>s</i><i>a</i><i>v</i><i>e</i><i>d</i></span>
+              <span class="story-mailbox__note-word" aria-hidden="true"><i>y</i><i>o</i><i>u</i><i>r</i><i>s</i></span>
+            </p>
+          </div>
+          <button class="story-mailbox__target story-mailbox__target--box" type="button" aria-label="Open the mailbox" disabled></button>
+          <button class="story-mailbox__target story-mailbox__target--photo" type="button" aria-label="Turn the photograph over" disabled></button>
+          <button class="story-mailbox__prompt" type="button" aria-hidden="true" disabled></button>
+          <p class="story-mailbox__memory" aria-hidden="true">they did not remember<br>leaving it behind.</p>
+          <div class="story-mailbox__static" aria-hidden="true">
+            <div class="story-mailbox__static-field"></div>
+            <div class="story-mailbox__static-bar"></div>
+            <div class="story-mailbox__static-scanlines"></div>
+          </div>
+          <div class="story-mailbox__charm-static" aria-hidden="true"></div>
+          <div class="story-mailbox__cut" aria-hidden="true"></div>
+        </section>
+        <section class="story-scene story-scene--wish-price" aria-label="Every wish asks for something in return" aria-hidden="true">
+          <img
+            class="wish-price__image"
+            src="assets/love-world-wish-price-angel-v1.png"
+            alt=""
+            aria-hidden="true"
+            width="1672"
+            height="941"
+          >
+          <div class="wish-price__veil" aria-hidden="true"></div>
+          <div class="wish-price__noise" aria-hidden="true"></div>
+          <div class="wish-price__copy">
+            <p class="wish-price__line wish-price__line--one" aria-hidden="true">but every wish</p>
+            <p class="wish-price__line wish-price__line--two" aria-hidden="true">asks for something in return.</p>
+          </div>
+          <div class="wish-price__cut" aria-hidden="true"></div>
+          <button class="wish-price__advance" type="button" aria-label="Continue after the wish" aria-hidden="true" disabled></button>
         </section>
         <p class="broadcast-media-subtitle" aria-hidden="true"></p>
         <button class="broadcast-subtitle-call" type="button" aria-label="Call her">- call her</button>
@@ -297,6 +343,6 @@
       <div class="paper-noise" aria-hidden="true"></div>
     </main>
     <script src="mask-data.js?v=20260709s"></script>
-    <script src="script.js?v=20260717parking1"></script>
+    <script src="script.js?v=20260720myth10"></script>
   </body>
 </html>
